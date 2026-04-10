@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use app\Models\User;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
+
 
 
 class AuthController extends Controller
@@ -14,20 +16,31 @@ class AuthController extends Controller
         $data = $request->validate([
             'full_name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
-            'password' => 'required|Password::defaults()',
+            'phone' => 'required|string|unique:users',
+            'password' => ['required', 'string', Password::defaults()],
         ]);
- $user = User::create($data);
 
+         $user = User::create([
+            'full_name' => $data['full_name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'password' => Hash::make($data['password']),
+        ]);
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
+           'user' => $user->makeHidden(['password']),
             'token' => $token,
         ]);
 }
 
-public function login(LoginRequest $request)
+public function login(Request $request)
     {
+            $request->validate([
+        'email' => 'required|email',
+        'password' => 'required|string',
+    ]);
+
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
@@ -39,7 +52,7 @@ public function login(LoginRequest $request)
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'user'  => new UserResource($user),
+            'user' => $user->makeHidden(['password']),
             'token' => $token,
         ]);
     }
