@@ -65,4 +65,11 @@ public function login(Request $request)
             'message' => 'تم تسجيل الخروج بنجاح.',
         ]);
     }
+
+    public function profile(Request $request)
+{
+    return response()->json([
+        'user' => $request->user()
+    ]);
+}
 }
