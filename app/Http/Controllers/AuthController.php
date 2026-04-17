@@ -26,6 +26,8 @@ class AuthController extends Controller
             'phone' => $data['phone'],
             'password' => Hash::make($data['password']),
         ]);
+            $user->assignRole('user');
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -69,7 +71,7 @@ public function login(Request $request)
     public function profile(Request $request)
 {
     return response()->json([
-        'user' => $request->user()
+        'user' => $request->user()->load('roles')
     ]);
 }
 }
