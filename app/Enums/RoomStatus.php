@@ -2,7 +2,9 @@
 
 namespace App\Enums;
 
-enum RoomStatus
+enum RoomStatus: string
 {
-    //
+case AVAILABLE = 'available';
+    case BOOKED = 'booked';
+    case MAINTENANCE = 'maintenance';
 }
