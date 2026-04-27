@@ -5,22 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Hotel;
 use App\Models\User;
-
-
+use App\Http\Requests\StoreHotelRequest;
+use App\Http\Requests\UpdateHotelRequest;
 
 class HotelController extends Controller
 {
-    public function store(Request $request)
+    public function store(StoreHotelRequest $request)
 {
-    $data = $request->validate([
-        'name' => 'required|string|max:100',
-        'description' => 'nullable|string',
-        'city' => 'required|string',
-        'address' => 'nullable|string',
-        'phone' => 'nullable|string|max:20',
-        'email' => 'nullable|email',
-        'star_rating' => 'nullable|integer|min:1|max:5',
-    ]);
+  $data = $request->validated();
 
     $similarHotel = Hotel::where('name', $data['name'])
         ->where('city', $data['city'])
@@ -64,7 +56,7 @@ public function show(Hotel $hotel)
     return response()->json($hotel);
 }
 
-public function update(Request $request, Hotel $hotel)
+public function update(UpdateHotelRequest $request, Hotel $hotel)
 {
     
     if (
@@ -74,17 +66,7 @@ public function update(Request $request, Hotel $hotel)
         return response()->json(['message' => 'Unauthorized'], 403);
     }
 
-    $data = $request->validate([
-        'name' => 'sometimes|string|max:100',
-        'description' => 'nullable|string',
-        'city' => 'sometimes|string',
-        'address' => 'nullable|string',
-        'phone' => 'nullable|string|max:20',
-        'email' => 'nullable|email',
-        'star_rating' => 'nullable|integer|min:1|max:5',
-        'is_active' => 'boolean'
-    ]);
-
+    $data = $request->validated();
     $hotel->update($data);
 
     return response()->json([
