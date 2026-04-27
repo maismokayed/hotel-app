@@ -6,19 +6,15 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
-
+use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\LoginRequest;
 
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
-        $data = $request->validate([
-            'full_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'phone' => 'required|string|unique:users',
-            'password' => ['required', 'string', Password::defaults()],
-        ]);
+        $data = $request->validate();
 
          $user = User::create([
             'full_name' => $data['full_name'],
@@ -36,20 +32,17 @@ class AuthController extends Controller
         ]);
 }
 
-public function login(Request $request)
+public function login(LoginRequest $request)
     {
-            $request->validate([
-        'email' => 'required|email',
-        'password' => 'required|string',
-    ]);
+         $data = $request->validated();
 
-        $user = User::where('email', $request->email)->first();
+    $user = User::where('email', $data['email'])->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
-            ], 401);
-        }
+    if (!$user || !Hash::check($data['password'], $user->password)) {
+        return response()->json([
+            'message' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+        ], 401);
+    }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
