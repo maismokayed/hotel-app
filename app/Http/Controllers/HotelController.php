@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 use App\Models\Hotel;
 use App\Http\Requests\StoreHotelRequest;
 use App\Http\Requests\UpdateHotelRequest;
+use App\Http\Resources\HotelResource;
 
 class HotelController extends Controller
 {
@@ -16,7 +17,7 @@ class HotelController extends Controller
     ->latest()
     ->paginate(10);
 
-    return response()->json($hotels);
+   return HotelResource::collection($hotels->load('user'));
 }
 
 public function show(Hotel $hotel)
@@ -26,13 +27,12 @@ public function show(Hotel $hotel)
                 'message' => 'Hotel not found'
             ], 404);
         }
-    return response()->json($hotel);
+   return new HotelResource($hotel->load('user'));
 }
 public function store(StoreHotelRequest $request)
     {
         $data = $request->validated();
 
-        // Prevent duplicate hotels
         $similarHotel = Hotel::whereRaw(
                 'LOWER(name) = ?',
                 [strtolower(trim($data['name']))]
@@ -64,10 +64,11 @@ $hotel->is_active = true;
 $hotel->user_id = auth()->id();
 
 $hotel->save();
-        return response()->json([
-            'message' => 'Hotel created successfully',
-            'hotel' => $hotel
-        ], 201);
+
+      return response()->json([
+    'message' => 'Hotel created successfully',
+    'hotel' => new HotelResource($hotel->load('user'))
+], 201);
     }
     /**
      * Update hotel
