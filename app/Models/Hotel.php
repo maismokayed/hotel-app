@@ -17,9 +17,8 @@ class Hotel extends Model
         'address',
         'phone',
         'email',
-        'star_rating',
-        'is_active',
-        'user_id',
+        'star_rating', 
+        
     ];
   public function user()
     {
