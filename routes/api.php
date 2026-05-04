@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HotelController;
+use App\Http\Controllers\BookingController;
 
 //Auth routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -26,3 +27,15 @@ Route::middleware(['auth:sanctum','role:admin|manager'])->group(function () {
 });
 Route::middleware(['auth:sanctum', 'role:admin'])
     ->patch('/hotels/{hotel}/transfer', [HotelController::class, 'transfer']);
+
+    // Booking routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/bookings', [BookingController::class, 'index']);
+    Route::post('/bookings', [BookingController::class, 'store']);
+    Route::get('/bookings/{booking}', [BookingController::class, 'show']);
+    Route::patch('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
+});
+
+Route::middleware(['auth:sanctum', 'role:admin|manager'])->group(function () {
+    Route::patch('/bookings/{booking}', [BookingController::class, 'update']);
+});
