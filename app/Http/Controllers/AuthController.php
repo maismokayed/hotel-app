@@ -8,33 +8,41 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\LoginRequest;
+use App\Http\Resources\UserResource;
 
 
 class AuthController extends Controller
 {
     public function register(RegisterRequest $request)
-    {
-        $data = $request->validate();
+{
+    $data = $request->validate([
+        'full_name' => 'required|string|max:255',
+        'email' => 'required|email|unique:users',
+        'phone' => 'required|string|unique:users',
+        'password' => ['required', 'string'],
+    ]);
 
-         $user = User::create([
-            'full_name' => $data['full_name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'],
-            'password' => Hash::make($data['password']),
-        ]);
-            $user->assignRole('user');
+    $user = User::create([
+        'full_name' => $data['full_name'],
+        'email' => $data['email'],
+        'phone' => $data['phone'],
+        'password' => Hash::make($data['password']),
+    ]);
+    
+    $user->assignRole('user');
+    $token = $user->createToken('auth_token')->plainTextToken;
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-           'user' => $user->makeHidden(['password']),
-            'token' => $token,
-        ]);
-}
+    return response()->json([
+        'user'  => new UserResource($user),
+        'token' => $token,
+    ], 200);}
 
 public function login(LoginRequest $request)
-    {
-         $data = $request->validated();
+{
+    $data = $request->validate([
+        'email' => 'required|email',
+        'password' => 'required|string',
+    ]);
 
     $user = User::where('email', $data['email'])->first();
 
@@ -44,17 +52,17 @@ public function login(LoginRequest $request)
         ], 401);
     }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+    $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'user' => $user->makeHidden(['password']),
-            'token' => $token,
-        ]);
-    }
+    return response()->json([
+        'user'  => new UserResource($user),
+        'token' => $token,
+    ]);
+}
 
      public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+   $request->user()->tokens()->delete();
 
         return response()->json([
             'message' => 'تم تسجيل الخروج بنجاح.',
@@ -64,7 +72,7 @@ public function login(LoginRequest $request)
     public function profile(Request $request)
 {
     return response()->json([
-        'user' => $request->user()->load('roles')
-    ]);
+            'user' => new UserResource($request->user()->load('roles'))
+        ]);
 }
 }
