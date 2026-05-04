@@ -24,9 +24,9 @@ class BookingController extends Controller
 
     public function show(Booking $booking)
     {
-        $this->authorize('view', $booking);
-        
-        return new BookingResource($booking->load(['room', 'user']));
+        if ($booking->user_id !== auth()->id()) {
+    return response()->json(['message' => 'غير مصرح لك.'], 403);
+}
     }
 
     public function store(StoreBookingRequest $request)

@@ -21,11 +21,12 @@ class BookingResource extends JsonResource
                 'full_name' => $this->user->full_name,
                 'email'     => $this->user->email,
             ],
-            'room'            => [
-                'id'             => $this->room->id,
-                'number'         => $this->room->number,
-                'price_per_night'=> $this->room->price_per_night,
-            ],
+           'room' => [
+    'id'              => $this->room->id,
+    'room_number'     => $this->room->room_number,
+    'type'            => $this->room->type,
+    'price_per_night' => $this->room->price_per_night,
+],
             'check_in_date'   => $this->check_in_date->format('Y-m-d H:i'),
             'check_out_date'  => $this->check_out_date->format('Y-m-d H:i'),
             'status'          => $this->status,
