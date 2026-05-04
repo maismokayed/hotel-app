@@ -41,10 +41,12 @@ it('can create a booking successfully', function () {
         ]);
 
     $response->assertStatus(201)
-             ->assertJsonStructure([
+         ->assertJsonStructure([
+             'data' => [
                  'id', 'room', 'user', 'check_in_date',
                  'check_out_date', 'status', 'total_price', 'final_price'
-             ]);
+             ]
+         ]);
 
     $this->assertDatabaseHas('bookings', [
         'user_id' => $this->user->id,
@@ -92,7 +94,7 @@ it('can apply a valid coupon', function () {
         ]);
 
     $response->assertStatus(201);
-    expect($response->json('discount_amount'))->toBeGreaterThan(0);
+expect($response->json('data.discount_amount'))->toBeGreaterThan(0);
 });
 
 it('cannot apply an invalid coupon', function () {
@@ -126,8 +128,8 @@ it('can list own bookings', function () {
     $response = $this->actingAs($this->user)
         ->getJson('/api/bookings');
 
-    $response->assertOk()
-             ->assertJsonCount(3);
+   $response->assertOk()
+         ->assertJsonCount(3, 'data');
 });
 
 // ============================================================

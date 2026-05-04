@@ -87,7 +87,7 @@ class BookingController extends Controller
             'number_of_guests' => $data['number_of_guests'],
         ]);
 
-        return new BookingResource($booking->load(['room', 'user']));
+        return (new BookingResource($booking->load(['room', 'user'])))->response()->setStatusCode(201);
     }
 
     public function update(UpdateBookingRequest $request, Booking $booking)
