@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CouponController;
+use App\Http\Controllers\ReviewController;
 
 //Auth routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -47,4 +48,14 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/coupons/{coupon}', [CouponController::class, 'show']);
     Route::put('/coupons/{coupon}', [CouponController::class, 'update']);
     Route::delete('/coupons/{coupon}', [CouponController::class, 'destroy']);
+});
+// review routes
+Route::get('/hotels/{hotel}/reviews', [ReviewController::class, 'index']);
+//  
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/reviews', [ReviewController::class, 'store']);
+});
+// 
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 });
