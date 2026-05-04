@@ -41,12 +41,12 @@ protected $fillable = [
     }
 
     public function coupon()
-    {
-        return $this->belongsTo(Coupon::class);
-    }
+   {
+       return $this->belongsTo(Coupon::class);
+   }
 
-    public function review()
-    {
-        return $this->hasOne(Review::class);
-    }
+ public function review()
+  {
+      return $this->hasOne(Review::class);
+ }
 }
