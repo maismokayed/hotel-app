@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\CouponController;
 
 //Auth routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -38,4 +39,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware(['auth:sanctum', 'role:admin|manager'])->group(function () {
     Route::patch('/bookings/{booking}', [BookingController::class, 'update']);
+});
+// coupon routes
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::get('/coupons', [CouponController::class, 'index']);
+    Route::post('/coupons', [CouponController::class, 'store']);
+    Route::get('/coupons/{coupon}', [CouponController::class, 'show']);
+    Route::put('/coupons/{coupon}', [CouponController::class, 'update']);
+    Route::delete('/coupons/{coupon}', [CouponController::class, 'destroy']);
 });
