@@ -11,13 +11,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
 });
-//hotel routes
-Route::middleware(['auth:sanctum'])->group(function () {
-    // show all
-    Route::get('/hotels', [HotelController::class, 'index']);
-    //show one
-    Route::get('/hotels/{hotel}', [HotelController::class, 'show']);
-});
+//         hotel routes
+Route::get('/hotels', [HotelController::class, 'index']);
+Route::get('/hotels/{hotel}', [HotelController::class, 'show']);
 
 Route::middleware(['auth:sanctum','role:admin|manager'])->group(function () {
     //create hotel
@@ -28,3 +24,5 @@ Route::middleware(['auth:sanctum','role:admin|manager'])->group(function () {
 //delete
     Route::delete('/hotels/{hotel}', [HotelController::class, 'destroy']);
 });
+Route::middleware(['auth:sanctum', 'role:admin'])
+    ->patch('/hotels/{hotel}/transfer', [HotelController::class, 'transfer']);

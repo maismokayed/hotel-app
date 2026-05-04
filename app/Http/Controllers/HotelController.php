@@ -7,6 +7,7 @@ use App\Models\Hotel;
 use App\Http\Requests\StoreHotelRequest;
 use App\Http\Requests\UpdateHotelRequest;
 use App\Http\Resources\HotelResource;
+use App\Http\Requests\TransferHotelRequest;
 
 class HotelController extends Controller
 {
@@ -110,7 +111,7 @@ $hotel->save();
 
     return response()->json([
         'message' => 'Hotel updated successfully',
-        'hotel' => $hotel->fresh()
+        'hotel' => new HotelResource($hotel->fresh()->load('user'))
     ]);
 }
     /**
@@ -144,4 +145,22 @@ $hotel->save();
             abort(403, 'Unauthorized');
         }
     }
+    public function transfer(TransferHotelRequest $request, Hotel $hotel)
+{
+    $newOwner = \App\Models\User::find($request->user_id);
+
+    // تأكد إن الشخص الجديد عنده role manager أو admin
+    if (!$newOwner->hasRole('manager') && !$newOwner->hasRole('admin')) {
+        return response()->json([
+            'message' => 'User must be a manager or admin'
+        ], 422);
+    }
+
+    $hotel->update(['user_id' => $request->user_id]);
+
+    return response()->json([
+        'message' => 'Hotel transferred successfully',
+        'hotel' => new HotelResource($hotel->fresh()->load('user'))
+    ]);
+}
 }

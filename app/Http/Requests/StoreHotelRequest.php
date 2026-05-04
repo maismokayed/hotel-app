@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreHotelRequest extends FormRequest
 {
@@ -11,7 +12,7 @@ class StoreHotelRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return ture;
+        return true;
     }
 
     /**
@@ -25,7 +26,7 @@ class StoreHotelRequest extends FormRequest
             'name' => 'required|string|max:100',
         'description' => 'nullable|string',
         'city' => 'required|string',
-        'address' => 'nullable|string',
+        'address' => 'required|string',
         'phone' => 'nullable|string|max:20',
         'email' => 'nullable|email',
         'star_rating' => 'nullable|integer|min:1|max:5',
