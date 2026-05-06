@@ -6,6 +6,7 @@ use App\Http\Controllers\HotelController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\WalletController;
 
 //Auth routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -58,4 +59,10 @@ Route::middleware('auth:sanctum')->group(function () {
 // 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
+});
+//wallet routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/wallet', [WalletController::class, 'show']);
+    Route::post('/wallet/deposit', [WalletController::class, 'deposit']);
+    Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
 });
