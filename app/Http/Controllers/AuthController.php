@@ -9,7 +9,7 @@ use Illuminate\Validation\Rules\Password;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
-
+use App\Models\Wallet;
 
 class AuthController extends Controller
 {
@@ -30,6 +30,11 @@ class AuthController extends Controller
     ]);
     
     $user->assignRole('user');
+
+Wallet::create([
+    'user_id' => $user->id,
+    'balance' => 0,
+]);
     $token = $user->createToken('auth_token')->plainTextToken;
 
     return response()->json([
