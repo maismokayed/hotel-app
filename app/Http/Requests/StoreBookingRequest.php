@@ -27,6 +27,7 @@ class StoreBookingRequest extends FormRequest
             'check_out_date'   => 'required|date|after:check_in_date',
             'number_of_guests' => 'required|integer|min:1',
             'coupon_id'        => 'nullable|exists:coupons,id',
+            'payment_method' => 'required|in:wallet,cash',
         ];
     }
 }

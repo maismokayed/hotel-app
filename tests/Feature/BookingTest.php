@@ -38,6 +38,7 @@ it('can create a booking successfully', function () {
             'check_in_date'    => now()->addDays(2)->format('Y-m-d'),
             'check_out_date'   => now()->addDays(5)->format('Y-m-d'),
             'number_of_guests' => 2,
+            'payment_method'   => 'cash',
         ]);
 
     $response->assertStatus(201)
@@ -62,6 +63,7 @@ it('cannot book an unavailable room', function () {
         'check_in_date'  => now()->addDays(2),
         'check_out_date' => now()->addDays(5),
         'status'         => 'confirmed',
+        'payment_method'   => 'cash',
     ]);
 
     $response = $this->actingAs($this->user)
@@ -70,6 +72,8 @@ it('cannot book an unavailable room', function () {
             'check_in_date'    => now()->addDays(3)->format('Y-m-d'),
             'check_out_date'   => now()->addDays(6)->format('Y-m-d'),
             'number_of_guests' => 2,
+                    'payment_method'   => 'cash',
+
         ]);
 
     $response->assertStatus(422)
@@ -82,6 +86,7 @@ it('can apply a valid coupon', function () {
         'discount_value' => 10,
         'is_active'      => true,
         'expires_at'     => now()->addDays(10),
+        
     ]);
 
     $response = $this->actingAs($this->user)
@@ -91,6 +96,7 @@ it('can apply a valid coupon', function () {
             'check_out_date'   => now()->addDays(4)->format('Y-m-d'),
             'number_of_guests' => 2,
             'coupon_id'        => $coupon->id,
+            'payment_method'   => 'cash',
         ]);
 
     $response->assertStatus(201);
@@ -109,6 +115,7 @@ it('cannot apply an invalid coupon', function () {
             'check_out_date'   => now()->addDays(4)->format('Y-m-d'),
             'number_of_guests' => 2,
             'coupon_id'        => $coupon->id,
+            'payment_method'   => 'cash',
         ]);
 
     $response->assertStatus(422)

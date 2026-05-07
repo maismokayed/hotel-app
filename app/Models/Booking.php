@@ -19,6 +19,7 @@ protected $fillable = [
         'discount_amount',
         'final_price',
         'number_of_guests',
+        'payment_method',
     ];
 
     protected $casts = [
