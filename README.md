@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
@@ -63,3 +64,14 @@ The system currently defines four main roles:
 - hotel-owner
 - hotel-admin
 - user
+=======
+Hotel Management & Reservation Platform
+
+Hotel Management & Reservation Platform is a full-stack web application designed to serve both hotel administrators and guests.
+
+The platform enables hotel owners and staff to manage hotels efficiently by handling rooms, availability, pricing, reservations, and users through a centralized admin dashboard.  
+At the same time, it provides end users with a simple and intuitive interface to browse hotels, check availability, and make reservations online.
+
+This project was developed as a college graduation project, focusing on real-world hotel operations, clean architecture, and secure API-based authentication.  
+It demonstrates practical implementation of modern web technologies, role-based access control, and scalable system design suitable for real hotel booking platforms.
+>>>>>>> main
