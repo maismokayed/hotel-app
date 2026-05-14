@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Models\Coupon;
+use App\Models\WalletTransaction;
 use App\Http\Requests\StoreBookingRequest;
 use App\Http\Requests\UpdateBookingRequest;
 use App\Http\Resources\BookingResource;
@@ -74,18 +75,38 @@ class BookingController extends Controller
 
         $finalPrice = max(0, $totalPrice - $discountAmount);
 
-        $booking = Booking::create([
-            'user_id'          => $request->user()->id,
-            'room_id'          => $room->id,
-            'coupon_id'        => $couponId,
-            'check_in_date'    => $data['check_in_date'],
-            'check_out_date'   => $data['check_out_date'],
-            'status'           => 'pending',
-            'total_price'      => $totalPrice,
-            'discount_amount'  => $discountAmount,
-            'final_price'      => $finalPrice,
-            'number_of_guests' => $data['number_of_guests'],
-        ]);
+        $paymentMethod = $data['payment_method'];
+
+if ($paymentMethod === 'wallet') {
+    $wallet = $request->user()->wallet;
+
+    if (!$wallet || $wallet->balance < $finalPrice) {
+        return response()->json([
+            'message' => 'رصيد المحفظة غير كافٍ لإتمام الحجز.',
+        ], 422);
+    }
+
+    $wallet->decrement('balance', $finalPrice);
+
+    WalletTransaction::create([
+        'wallet_id'        => $wallet->id,
+        'user_id'          => $request->user()->id,
+        'amount'           => $finalPrice,
+        'transaction_type' => 'debit',
+        'transaction_date' => now(),
+    ]);
+}
+
+       $booking = Booking::create([
+    ...$data,
+    'user_id'         => $request->user()->id,
+    'room_id'         => $room->id,
+    'coupon_id'       => $couponId,
+    'status'          => 'pending',
+    'total_price'     => $totalPrice,
+    'discount_amount' => $discountAmount,
+    'final_price'     => $finalPrice,
+]);
 
         return (new BookingResource($booking->load(['room', 'user'])))->response()->setStatusCode(201);
     }

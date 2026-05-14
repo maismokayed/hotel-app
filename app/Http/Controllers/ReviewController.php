@@ -38,15 +38,11 @@ class ReviewController extends Controller
             return response()->json(['message' => 'لقد قمت بتقييم هذا الحجز مسبقاً.'], 422);
         }
 
-        $review = Review::create([
-            'user_id'     => $request->user()->id,
-            'hotel_id'    => $data['hotel_id'],
-            'booking_id'  => $data['booking_id'],
-            'comment'     => $data['comment'],
-            'rating'      => $data['rating'],
-            'review_date' => now()->toDateString(),
-        ]);
-
+    $review = Review::create([
+    ...$data,
+    'user_id'     => $request->user()->id,
+    'review_date' => now()->toDateString(),
+]);
         return (new ReviewResource($review->load('user')))->response()->setStatusCode(201);
     }
 

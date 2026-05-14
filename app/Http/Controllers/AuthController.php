@@ -13,14 +13,16 @@ use App\Models\Wallet;
 
 class AuthController extends Controller
 {
+    public function index()
+{
+    $users = User::with('roles')->get();
+    return response()->json([
+        'users' => UserResource::collection($users)
+    ]);
+}
     public function register(RegisterRequest $request)
 {
-    $data = $request->validate([
-        'full_name' => 'required|string|max:255',
-        'email' => 'required|email|unique:users',
-        'phone' => 'required|string|unique:users',
-        'password' => ['required', 'string'],
-    ]);
+    $data = $request->validated();
 
     $user = User::create([
         'full_name' => $data['full_name'],
@@ -44,10 +46,7 @@ Wallet::create([
 
 public function login(LoginRequest $request)
 {
-    $data = $request->validate([
-        'email' => 'required|email',
-        'password' => 'required|string',
-    ]);
+    $data = $request->validated();
 
     $user = User::where('email', $data['email'])->first();
 

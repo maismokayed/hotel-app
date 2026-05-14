@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+
 class HotelResource extends JsonResource
 {
     /**
@@ -30,12 +31,7 @@ class HotelResource extends JsonResource
 
             'is_active'   => (bool) $this->is_active,
 
-            'owner' => $this->whenLoaded('user', function () {
-                return [
-                    'id'   => $this->user->id,
-                    'name' => $this->user->name,
-                ];
-            }),
+            'owner' => $this->whenLoaded('user', fn() => new UserResource($this->user)),
         ];
     }
 }

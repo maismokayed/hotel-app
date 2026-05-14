@@ -34,20 +34,14 @@ public function store(StoreHotelRequest $request)
     {
         $data = $request->validated();
 
-        $similarHotel = Hotel::whereRaw(
-                'LOWER(name) = ?',
-                [strtolower(trim($data['name']))]
-            )
-            ->whereRaw(
-                'LOWER(city) = ?',
-                [strtolower(trim($data['city']))]
-            )
-            ->first();
+      $similarHotel = Hotel::where('name', trim($data['name']))
+    ->where('city', trim($data['city']))
+    ->first();
 
         if ($similarHotel) {
             return response()->json([
                 'message' => 'Hotel already exists in this city',
-                'existing_hotel' => $similarHotel
+                'existing_hotel' => new HotelResource($similarHotel->load('user'))
             ], 409);
         }
 
@@ -81,21 +75,15 @@ $hotel->save();
     $data = $request->validated();
 
     // Prevent duplicate hotel after update
-    $similarHotel = Hotel::whereRaw(
-            'LOWER(name) = ?',
-            [strtolower(trim($data['name'] ?? $hotel->name))]
-        )
-        ->whereRaw(
-            'LOWER(city) = ?',
-            [strtolower(trim($data['city'] ?? $hotel->city))]
-        )
-        ->where('id', '!=', $hotel->id)
-        ->first();
+   $similarHotel = Hotel::where('name', trim($data['name'] ?? $hotel->name))
+    ->where('city', trim($data['city'] ?? $hotel->city))
+    ->where('id', '!=', $hotel->id)
+    ->first();
 
     if ($similarHotel) {
         return response()->json([
             'message' => 'Another hotel with same name already exists in this city',
-            'existing_hotel' => $similarHotel
+            'existing_hotel' => new HotelResource($similarHotel->load('user')) 
         ], 409);
     }
 
@@ -111,7 +99,7 @@ $hotel->save();
 
     return response()->json([
         'message' => 'Hotel updated successfully',
-        'hotel' => new HotelResource($hotel->fresh()->load('user'))
+        'hotel' => new HotelResource($hotel->fresh()->load('user')) 
     ]);
 }
     /**
