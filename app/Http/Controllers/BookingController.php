@@ -10,6 +10,7 @@ use App\Models\WalletTransaction;
 use App\Http\Requests\StoreBookingRequest;
 use App\Http\Requests\UpdateBookingRequest;
 use App\Http\Resources\BookingResource;
+use Illuminate\Support\Facades\DB;
 
 class BookingController extends Controller
 {
@@ -26,15 +27,16 @@ class BookingController extends Controller
     public function show(Booking $booking)
     {
         if ($booking->user_id !== auth()->id()) {
-    return response()->json(['message' => 'غير مصرح لك.'], 403);
-}
+            return response()->json(['message' => 'غير مصرح لك.'], 403);
+        }
+
+        return new BookingResource($booking);
     }
 
     public function store(StoreBookingRequest $request)
     {
         $data = $request->validated();
         $room = Room::findOrFail($data['room_id']);
-
 
         $isAvailable = !Booking::where('room_id', $room->id)
             ->where('status', '!=', 'cancelled')
@@ -47,10 +49,9 @@ class BookingController extends Controller
             return response()->json(['message' => 'الغرفة غير متاحة في هذه الفترة.'], 422);
         }
 
-      
-        $checkIn  = now()->parse($data['check_in_date']);
-        $checkOut = now()->parse($data['check_out_date']);
-        $nights   = $checkIn->diffInDays($checkOut);
+        $checkIn    = now()->parse($data['check_in_date']);
+        $checkOut   = now()->parse($data['check_out_date']);
+        $nights     = $checkIn->diffInDays($checkOut);
         $totalPrice = $nights * $room->price_per_night;
 
         $discountAmount = 0;
@@ -73,40 +74,53 @@ class BookingController extends Controller
             $couponId = $coupon->id;
         }
 
-        $finalPrice = max(0, $totalPrice - $discountAmount);
-
+        $finalPrice    = max(0, $totalPrice - $discountAmount);
         $paymentMethod = $data['payment_method'];
+        $booking       = null;
 
-if ($paymentMethod === 'wallet') {
-    $wallet = $request->user()->wallet;
+        if ($paymentMethod === 'wallet') {
+            $wallet = $request->user()->wallet;
 
-    if (!$wallet || $wallet->balance < $finalPrice) {
-        return response()->json([
-            'message' => 'رصيد المحفظة غير كافٍ لإتمام الحجز.',
-        ], 422);
-    }
+            if (!$wallet || $wallet->balance < $finalPrice) {
+                return response()->json([
+                    'message' => 'رصيد المحفظة غير كافٍ لإتمام الحجز.',
+                ], 422);
+            }
 
-    $wallet->decrement('balance', $finalPrice);
+            DB::transaction(function () use ($wallet, $request, $finalPrice, $data, $room, $couponId, $totalPrice, $discountAmount, &$booking) {
+                $wallet->decrement('balance', $finalPrice);
 
-    WalletTransaction::create([
-        'wallet_id'        => $wallet->id,
-        'user_id'          => $request->user()->id,
-        'amount'           => $finalPrice,
-        'transaction_type' => 'debit',
-        'transaction_date' => now(),
-    ]);
-}
+                WalletTransaction::create([
+                    'wallet_id'        => $wallet->id,
+                    'user_id'          => $request->user()->id,
+                    'amount'           => $finalPrice,
+                    'transaction_type' => 'debit',
+                    'transaction_date' => now(),
+                ]);
 
-       $booking = Booking::create([
-    ...$data,
-    'user_id'         => $request->user()->id,
-    'room_id'         => $room->id,
-    'coupon_id'       => $couponId,
-    'status'          => 'pending',
-    'total_price'     => $totalPrice,
-    'discount_amount' => $discountAmount,
-    'final_price'     => $finalPrice,
-]);
+                $booking = Booking::create([
+                    ...$data,
+                    'user_id'         => $request->user()->id,
+                    'room_id'         => $room->id,
+                    'coupon_id'       => $couponId,
+                    'status'          => 'pending',
+                    'total_price'     => $totalPrice,
+                    'discount_amount' => $discountAmount,
+                    'final_price'     => $finalPrice,
+                ]);
+            });
+        } else {
+            $booking = Booking::create([
+                ...$data,
+                'user_id'         => $request->user()->id,
+                'room_id'         => $room->id,
+                'coupon_id'       => $couponId,
+                'status'          => 'pending',
+                'total_price'     => $totalPrice,
+                'discount_amount' => $discountAmount,
+                'final_price'     => $finalPrice,
+            ]);
+        }
 
         return (new BookingResource($booking->load(['room', 'user'])))->response()->setStatusCode(201);
     }
