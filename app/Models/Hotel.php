@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 class Hotel extends Model
 {
-     use HasFactory, SoftDeletes;
+     use HasFactory, SoftDeletes, InteractsWithMedia;
 
     protected $fillable = [
         'name',
@@ -30,4 +32,8 @@ class Hotel extends Model
 {
     return $this->hasMany(Review::class);
 }
+  public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('images');
+    }
 }

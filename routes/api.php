@@ -23,13 +23,17 @@ Route::prefix('hotels')->group(function () {
     Route::get('/', [HotelController::class, 'index']);
     Route::get('/{hotel}', [HotelController::class, 'show']);
     Route::get('/{hotel}/reviews', [ReviewController::class, 'index']);
+    Route::get('/{hotel}/images', [HotelController::class, 'getImages']);
 
     Route::middleware(['auth:sanctum', 'role:admin|manager'])->group(function () {
         Route::post('/', [HotelController::class, 'store']);
         Route::put('/{hotel}', [HotelController::class, 'update']);
         Route::patch('/{hotel}', [HotelController::class, 'update']);
         Route::delete('/{hotel}', [HotelController::class, 'destroy']);
+        Route::post('/{hotel}/images', [HotelController::class, 'uploadImages']);
+        Route::delete('/{hotel}/images/{mediaId}', [HotelController::class, 'deleteImage']);
     });
+
     Route::middleware(['auth:sanctum', 'role:admin'])
         ->patch('/{hotel}/transfer', [HotelController::class, 'transfer']);
 });

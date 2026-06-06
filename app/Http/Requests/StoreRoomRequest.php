@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Enums\RoomType;
+use App\Enums\RoomStatus;
 
 class StoreRoomRequest extends FormRequest
 {
@@ -11,7 +13,7 @@ class StoreRoomRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +24,12 @@ class StoreRoomRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'hotel_id' => 'required|exists:hotels,id',
+            'room_number' => 'required|string|max:50',
+            'type' => 'required|in:' . implode(',', array_column(RoomType::cases(), 'value')),
+            'capacity' => 'required|integer|min:1|max:12',
+            'price_per_night' => 'required|numeric|min:0',
+            'status' => 'nullable|in:' . implode(',', array_column(RoomStatus::cases(), 'value')),
         ];
     }
 }
