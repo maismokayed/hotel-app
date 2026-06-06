@@ -138,8 +138,11 @@ $hotel->save();
 {
     $newOwner = \App\Models\User::find($request->user_id);
 
-    // تأكد إن الشخص الجديد عنده role manager أو admin
-    if (!$newOwner->hasRole('manager') && !$newOwner->hasRole('admin')) {
+if (!$newOwner) {
+    return response()->json(['message' => 'المستخدم غير موجود.'], 404);
+}
+
+if (!$newOwner->hasRole('manager') && !$newOwner->hasRole('admin')) {
         return response()->json([
             'message' => 'User must be a manager or admin'
         ], 422);
