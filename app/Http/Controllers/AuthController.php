@@ -10,6 +10,7 @@ use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Wallet;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -24,25 +25,31 @@ class AuthController extends Controller
 {
     $data = $request->validated();
 
-    $user = User::create([
-        'full_name' => $data['full_name'],
-        'email' => $data['email'],
-        'phone' => $data['phone'],
-        'password' => Hash::make($data['password']),
-    ]);
-    
-    $user->assignRole('user');
+    $user = DB::transaction(function () use ($data) {
+        $user = User::create([
+            'full_name' => $data['full_name'],
+            'email'     => $data['email'],
+            'phone'     => $data['phone'],
+            'password'  => Hash::make($data['password']),
+        ]);
 
-Wallet::create([
-    'user_id' => $user->id,
-    'balance' => 0,
-]);
+        $user->assignRole('user');
+
+        Wallet::create([
+            'user_id' => $user->id,
+            'balance' => 0,
+        ]);
+
+        return $user;
+    });
+
     $token = $user->createToken('auth_token')->plainTextToken;
 
     return response()->json([
         'user'  => new UserResource($user),
         'token' => $token,
-    ], 200);}
+    ], 200);
+}
 
 public function login(LoginRequest $request)
 {

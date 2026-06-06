@@ -11,11 +11,16 @@ use App\Http\Resources\WalletTransactionResource;
 
 class WalletController extends Controller
 {
-    public function show(Request $request)
+ public function show(Request $request)
 {
-    return new WalletResource($request->user()->wallet);
-}
+    $wallet = $request->user()->wallet;
 
+    if (!$wallet) {
+        return response()->json(['message' => 'المحفظة غير موجودة.'], 404);
+    }
+
+    return new WalletResource($wallet);
+}
 
     public function deposit(WalletDepositRequest $request)
     {
@@ -42,9 +47,15 @@ class WalletController extends Controller
         return new WalletResource($wallet->fresh());
     }
 
-   public function transactions(Request $request)
+  public function transactions(Request $request)
 {
-    $transactions = $request->user()->wallet->transactions()->latest()->get();
+    $wallet = $request->user()->wallet;
+
+    if (!$wallet) {
+        return response()->json(['message' => 'المحفظة غير موجودة.'], 404);
+    }
+
+    $transactions = $wallet->transactions()->latest()->get();
     return WalletTransactionResource::collection($transactions);
 }
 }
