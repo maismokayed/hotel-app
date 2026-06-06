@@ -39,10 +39,10 @@ class BookingController extends Controller
         $isAvailable = !Booking::where('room_id', $room->id)
             ->where('status', '!=', 'cancelled')
             ->where(function ($query) use ($data) {
-                $query->whereBetween('check_in_date', [$data['check_in_date'], $data['check_out_date']])
-                      ->orWhereBetween('check_out_date', [$data['check_in_date'], $data['check_out_date']]);
-            })->exists();
-
+               $query->where('check_in_date', '<', $data['check_out_date'])
+      ->where('check_out_date', '>', $data['check_in_date']);
+            })
+            ->exists();
         if (!$isAvailable) {
             return response()->json(['message' => 'الغرفة غير متاحة في هذه الفترة.'], 422);
         }
