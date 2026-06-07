@@ -38,11 +38,11 @@ class ReviewController extends Controller
             return response()->json(['message' => 'لقد قمت بتقييم هذا الحجز مسبقاً.'], 422);
         }
 
-    $review = Review::create([
-    ...$data,
-    'user_id'     => $request->user()->id,
-    'review_date' => now()->toDateString(),
-]);
+        $review = Review::create([
+            ...$data,
+            'user_id'     => $request->user()->id,
+            'review_date' => now()->toDateString(),
+        ]);
         return (new ReviewResource($review->load('user')))->response()->setStatusCode(201);
     }
 
@@ -51,5 +51,4 @@ class ReviewController extends Controller
         $review->delete();
         return response()->json(['message' => 'تم حذف التقييم بنجاح.']);
     }
-
 }

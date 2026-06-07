@@ -26,8 +26,10 @@ class BookingController extends Controller
     public function show(Booking $booking)
     {
         if ($booking->user_id !== auth()->id()) {
-    return response()->json(['message' => 'غير مصرح لك.'], 403);
-}
+            return response()->json(['message' => 'غير مصرح لك.'], 403);
+        }
+
+        return new BookingResource($booking->load(['room', 'user']));
     }
 
     public function store(StoreBookingRequest $request)

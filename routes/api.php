@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\RoomController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\WalletController;
@@ -57,6 +58,18 @@ Route::prefix('coupons')->middleware(['auth:sanctum', 'role:admin'])->group(func
     Route::get('/{coupon}', [CouponController::class, 'show']);
     Route::put('/{coupon}', [CouponController::class, 'update']);
     Route::delete('/{coupon}', [CouponController::class, 'destroy']);
+});
+
+// room routes
+Route::prefix('rooms')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [RoomController::class, 'index']);
+    Route::get('/{room}', [RoomController::class, 'show']);
+
+    Route::middleware('role:admin|manager')->group(function () {
+        Route::post('/', [RoomController::class, 'store']);
+        Route::put('/{room}', [RoomController::class, 'update']);
+        Route::delete('/{room}', [RoomController::class, 'destroy']);
+    });
 });
 // review routes
 Route::middleware('auth:sanctum')->group(function () {
