@@ -8,6 +8,7 @@ use App\Http\Requests\StoreHotelRequest;
 use App\Http\Requests\UpdateHotelRequest;
 use App\Http\Resources\HotelResource;
 use App\Http\Requests\TransferHotelRequest;
+use Illuminate\Http\Request;
 
 class HotelController extends Controller
 {
@@ -137,8 +138,11 @@ $hotel->save();
 {
     $newOwner = \App\Models\User::find($request->user_id);
 
-    // تأكد إن الشخص الجديد عنده role manager أو admin
-    if (!$newOwner->hasRole('manager') && !$newOwner->hasRole('admin')) {
+if (!$newOwner) {
+    return response()->json(['message' => 'المستخدم غير موجود.'], 404);
+}
+
+if (!$newOwner->hasRole('manager') && !$newOwner->hasRole('admin')) {
         return response()->json([
             'message' => 'User must be a manager or admin'
         ], 422);
@@ -149,6 +153,68 @@ $hotel->save();
     return response()->json([
         'message' => 'Hotel transferred successfully',
         'hotel' => new HotelResource($hotel->fresh()->load('user'))
+    ]);
+}
+
+public function uploadImages(Request $request, Hotel $hotel)
+{
+    $this->authorizeHotelAccess($hotel);
+
+    $request->validate([
+        'images'   => 'required|array|min:1',
+        'images.*' => 'required|image|mimes:jpg,jpeg,png|max:10240',
+    ]);
+
+    $uploaded = [];
+
+    foreach ($request->file('images') as $image) {
+        $media = $hotel->addMedia($image)
+            ->toMediaCollection('images');
+
+        $uploaded[] = [
+            'id'   => $media->id,
+            'url'  => $media->getUrl(),
+            'name' => $media->file_name,
+        ];
+    }
+
+    return response()->json([
+        'message' => 'Images uploaded successfully',
+        'images'  => $uploaded,
+    ], 201);
+}
+
+public function getImages(Hotel $hotel)
+{
+    $images = $hotel->getMedia('images')->map(fn($media) => [
+        'id'         => $media->id,
+        'url'        => $media->getUrl(),
+        'name'       => $media->file_name,
+        'mime_type'  => $media->mime_type,
+        'created_at' => $media->created_at,
+    ]);
+
+    return response()->json([
+        'images' => $images,
+    ]);
+}
+
+public function deleteImage(Hotel $hotel, $mediaId)
+{
+    $this->authorizeHotelAccess($hotel);
+
+    $media = $hotel->getMedia('images')->find($mediaId);
+
+    if (!$media) {
+        return response()->json([
+            'message' => 'Image not found',
+        ], 404);
+    }
+
+    $media->delete();
+
+    return response()->json([
+        'message' => 'Image deleted successfully',
     ]);
 }
 }

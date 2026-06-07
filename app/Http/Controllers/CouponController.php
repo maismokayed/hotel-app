@@ -17,27 +17,23 @@ class CouponController extends Controller
         return CouponResource::collection($coupons);
     }
 
-    // عرض كوبون واحد
     public function show(Coupon $coupon)
     {
         return new CouponResource($coupon);
     }
 
-    // إنشاء كوبون جديد
     public function store(StoreCouponRequest $request)
     {
         $coupon = Coupon::create($request->validated());
         return (new CouponResource($coupon))->response()->setStatusCode(201);
     }
 
-    // تعديل كوبون
     public function update(UpdateCouponRequest $request, Coupon $coupon)
     {
         $coupon->update($request->validated());
         return new CouponResource($coupon);
     }
 
-    // حذف كوبون
     public function destroy(Coupon $coupon)
     {
         $coupon->delete();
