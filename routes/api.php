@@ -39,7 +39,7 @@ Route::prefix('hotels')->group(function () {
         ->patch('/{hotel}/transfer', [HotelController::class, 'transfer']);
 });
 
-    // Booking routes
+// Booking routes
 Route::prefix('bookings')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [BookingController::class, 'index']);
     Route::post('/', [BookingController::class, 'store']);
