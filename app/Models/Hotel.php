@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Hotel extends Model
+class Hotel extends Model implements HasMedia
 {
-     use HasFactory, SoftDeletes, InteractsWithMedia;
+    use HasFactory, SoftDeletes, InteractsWithMedia;
 
     protected $fillable = [
         'name',
@@ -19,20 +19,20 @@ class Hotel extends Model
         'address',
         'phone',
         'email',
-        'star_rating', 
-         'is_active',
-    'user_id',
+        'star_rating',
+        'is_active',
+        'user_id',
     ];
-  public function user()
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
 
     public function reviews()
-{
-    return $this->hasMany(Review::class);
-}
-  public function registerMediaCollections(): void
+    {
+        return $this->hasMany(Review::class);
+    }
+    public function registerMediaCollections(): void
     {
         $this->addMediaCollection('images');
     }

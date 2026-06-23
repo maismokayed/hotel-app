@@ -8,7 +8,7 @@ use App\Http\Controllers\RoomController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\WalletController;
-
+use App\Http\Controllers\Admin\DashboardController;
 //Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -83,4 +83,8 @@ Route::prefix('wallet')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [WalletController::class, 'show']);
     Route::post('/deposit', [WalletController::class, 'deposit']);
     Route::get('/transactions', [WalletController::class, 'transactions']);
+});
+// admin Dashboard 
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index']);
 });

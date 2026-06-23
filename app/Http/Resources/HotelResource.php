@@ -31,6 +31,8 @@ class HotelResource extends JsonResource
 
             'is_active'   => (bool) $this->is_active,
 
+            'image' => $this->getFirstMediaUrl('images'),
+
             'owner' => $this->whenLoaded('user', fn() => new UserResource($this->user)),
         ];
     }
