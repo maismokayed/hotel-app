@@ -13,9 +13,15 @@ use Illuminate\Http\Request;
 class HotelController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
         $hotels = Hotel::where('is_active', true)
+            ->when($request->name, fn($q) =>
+            $q->where('name', 'like', "%{$request->name}%"))
+            ->when($request->city, fn($q) =>
+            $q->where('city', $request->city))
+            ->when($request->star_rating, fn($q) =>
+            $q->where('star_rating', $request->star_rating))
             ->latest()
             ->paginate(10);
 
