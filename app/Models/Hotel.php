@@ -15,7 +15,7 @@ class Hotel extends Model implements HasMedia
     protected $fillable = [
         'name',
         'description',
-        'city',
+        'city_id',
         'address',
         'phone',
         'email',
@@ -35,5 +35,9 @@ class Hotel extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('images');
+    }
+    public function city()
+    {
+        return $this->belongsTo(City::class);
     }
 }
