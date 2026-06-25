@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\City;
 use App\Http\Resources\CityResource;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class CityController extends Controller
 {
@@ -28,6 +29,14 @@ class CityController extends Controller
         return response()->json([
             'message' => 'Image uploaded successfully',
             'image_url' => $city->getFirstMediaUrl('images')
+        ]);
+    }
+    public function deleteImage(City $city): JsonResponse
+    {
+        $city->clearMediaCollection('images');
+
+        return response()->json([
+            'message' => 'Image deleted successfully'
         ]);
     }
 }
