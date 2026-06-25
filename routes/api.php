@@ -9,6 +9,9 @@ use App\Http\Controllers\CouponController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\CityController;
+
+
 //Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -88,3 +91,5 @@ Route::prefix('wallet')->middleware('auth:sanctum')->group(function () {
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
 });
+//cities
+Route::get('/cities', [CityController::class, 'index']);
