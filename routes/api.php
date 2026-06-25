@@ -93,3 +93,5 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 });
 //cities
 Route::get('/cities', [CityController::class, 'index']);
+Route::middleware(['auth:sanctum', 'role:admin'])
+    ->post('/cities/{city}/image', [CityController::class, 'uploadImage']);
