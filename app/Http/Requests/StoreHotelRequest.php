@@ -24,12 +24,12 @@ class StoreHotelRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:100',
-        'description' => 'nullable|string',
-        'city' => 'required|string',
-        'address' => 'required|string',
-        'phone' => 'nullable|string|max:20',
-        'email' => 'nullable|email',
-        'star_rating' => 'nullable|integer|min:1|max:5',
+            'description' => 'nullable|string',
+            'city_id' => 'required|exists:cities,id',
+            'address' => 'required|string',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email',
+            'star_rating' => 'nullable|integer|min:1|max:5',
         ];
     }
 }
