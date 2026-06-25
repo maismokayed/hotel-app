@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-
 use App\Models\Hotel;
 use App\Http\Requests\StoreHotelRequest;
 use App\Http\Requests\UpdateHotelRequest;
@@ -12,92 +11,84 @@ use Illuminate\Http\Request;
 
 class HotelController extends Controller
 {
-
     public function index(Request $request)
     {
         $hotels = Hotel::where('is_active', true)
             ->when($request->name, fn($q) =>
             $q->where('name', 'like', "%{$request->name}%"))
-            ->when($request->city, fn($q) =>
-            $q->where('city', $request->city))
+            ->when($request->city_id, fn($q) =>
+            $q->where('city_id', $request->city_id))
             ->when($request->star_rating, fn($q) =>
             $q->where('star_rating', $request->star_rating))
             ->latest()
             ->paginate(10);
 
-        return HotelResource::collection($hotels->load('user'));
+        return HotelResource::collection($hotels->load('user', 'city'));
     }
 
     public function show(Hotel $hotel)
     {
         if (!$hotel->is_active) {
-            return response()->json([
-                'message' => 'Hotel not found'
-            ], 404);
+            return response()->json(['message' => 'Hotel not found'], 404);
         }
-        return new HotelResource($hotel->load('user'));
+        return new HotelResource($hotel->load('user', 'city'));
     }
+
     public function store(StoreHotelRequest $request)
     {
         $data = $request->validated();
 
         $similarHotel = Hotel::where('name', trim($data['name']))
-            ->where('city', trim($data['city']))
+            ->where('city_id', $data['city_id'])
             ->first();
 
         if ($similarHotel) {
             return response()->json([
                 'message' => 'Hotel already exists in this city',
-                'existing_hotel' => new HotelResource($similarHotel->load('user'))
+                'existing_hotel' => new HotelResource($similarHotel->load('user', 'city'))
             ], 409);
         }
 
         $hotel = new Hotel();
-
         $hotel->name = trim($data['name']);
         $hotel->description = $data['description'] ?? null;
-        $hotel->city = trim($data['city']);
+        $hotel->city_id = $data['city_id'];
         $hotel->address = trim($data['address']);
         $hotel->phone = $data['phone'] ?? null;
         $hotel->email = $data['email'] ?? null;
         $hotel->star_rating = $data['star_rating'] ?? null;
-
         $hotel->is_active = true;
         $hotel->user_id = auth()->id();
-
         $hotel->save();
 
         return response()->json([
             'message' => 'Hotel created successfully',
-            'hotel' => new HotelResource($hotel->load('user'))
+            'hotel' => new HotelResource($hotel->load('user', 'city'))
         ], 201);
     }
-    /**
-     * Update hotel
-     */
+
     public function update(UpdateHotelRequest $request, Hotel $hotel)
     {
         $this->authorizeHotelAccess($hotel);
 
         $data = $request->validated();
 
-        // Prevent duplicate hotel after update
         $similarHotel = Hotel::where('name', trim($data['name'] ?? $hotel->name))
-            ->where('city', trim($data['city'] ?? $hotel->city))
+            ->where('city_id', $data['city_id'] ?? $hotel->city_id)
             ->where('id', '!=', $hotel->id)
             ->first();
 
         if ($similarHotel) {
             return response()->json([
                 'message' => 'Another hotel with same name already exists in this city',
-                'existing_hotel' => new HotelResource($similarHotel->load('user'))
+                'existing_hotel' => new HotelResource($similarHotel->load('user', 'city'))
             ], 409);
         }
 
         $hotel->update([
             'name' => trim($data['name'] ?? $hotel->name),
             'description' => $data['description'] ?? $hotel->description,
-            'city' => trim($data['city'] ?? $hotel->city),
+            'city_id' => $data['city_id'] ?? $hotel->city_id,
             'address' => trim($data['address'] ?? $hotel->address),
             'phone' => $data['phone'] ?? $hotel->phone,
             'email' => $data['email'] ?? $hotel->email,
@@ -106,16 +97,13 @@ class HotelController extends Controller
 
         return response()->json([
             'message' => 'Hotel updated successfully',
-            'hotel' => new HotelResource($hotel->fresh()->load('user'))
+            'hotel' => new HotelResource($hotel->fresh()->load('user', 'city'))
         ]);
     }
-    /**
-     * Delete hotel
-     */
+
     public function destroy(Hotel $hotel)
     {
         $this->authorizeHotelAccess($hotel);
-
         $hotel->delete();
 
         return response()->json([
@@ -123,9 +111,6 @@ class HotelController extends Controller
         ]);
     }
 
-    /**
-     * Authorization helper
-     */
     private function authorizeHotelAccess(Hotel $hotel)
     {
         $user = auth()->user();
@@ -140,6 +125,7 @@ class HotelController extends Controller
             abort(403, 'Unauthorized');
         }
     }
+
     public function transfer(TransferHotelRequest $request, Hotel $hotel)
     {
         $newOwner = \App\Models\User::find($request->user_id);
@@ -158,7 +144,7 @@ class HotelController extends Controller
 
         return response()->json([
             'message' => 'Hotel transferred successfully',
-            'hotel' => new HotelResource($hotel->fresh()->load('user'))
+            'hotel' => new HotelResource($hotel->fresh()->load('user', 'city'))
         ]);
     }
 
