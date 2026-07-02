@@ -64,11 +64,11 @@ Route::prefix('coupons')->middleware(['auth:sanctum', 'role:admin'])->group(func
 });
 
 // room routes
-Route::prefix('rooms')->middleware('auth:sanctum')->group(function () {
+Route::prefix('rooms')->group(function () {
     Route::get('/', [RoomController::class, 'index']);
     Route::get('/{room}', [RoomController::class, 'show']);
 
-    Route::middleware('role:admin|manager')->group(function () {
+    Route::middleware(['auth:sanctum', 'role:admin|manager'])->group(function () {
         Route::post('/', [RoomController::class, 'store']);
         Route::put('/{room}', [RoomController::class, 'update']);
         Route::delete('/{room}', [RoomController::class, 'destroy']);
