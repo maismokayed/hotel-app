@@ -10,6 +10,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\CityController;
+use App\Http\Controllers\ContactMessageController;
 
 
 //Auth routes
@@ -97,3 +98,5 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::post('/cities/{city}/image', [CityController::class, 'uploadImage']);
     Route::delete('/cities/{city}/image', [CityController::class, 'deleteImage']);
 });
+//Contact messages routes
+Route::post('/contact-us', [ContactMessageController::class, 'store']);
