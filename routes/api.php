@@ -99,4 +99,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::delete('/cities/{city}/image', [CityController::class, 'deleteImage']);
 });
 //Contact messages routes
+//Contact messages routes
 Route::post('/contact-us', [ContactMessageController::class, 'store']);
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::get('/contact-us', [ContactMessageController::class, 'index']);
+    Route::patch('/contact-us/{contactMessage}', [ContactMessageController::class, 'update']);
+});
