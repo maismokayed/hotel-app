@@ -16,4 +16,26 @@ class ContactMessageController extends Controller
             'data' => $contactMessage,
         ], 201);
     }
+
+    public function index()
+    {
+        $contactMessages = ContactMessage::latest()->paginate(15);
+
+        return response()->json([
+            'message' => 'تم جلب رسائل التواصل بنجاح',
+            'data' => $contactMessages,
+        ]);
+    }
+
+    public function update(ContactMessage $contactMessage)
+    {
+        $contactMessage->update([
+            'is_resolved' => true,
+        ]);
+
+        return response()->json([
+            'message' => 'تم تحديث حالة الرسالة بنجاح',
+            'data' => $contactMessage,
+        ]);
+    }
 }
