@@ -29,9 +29,8 @@ class ContactMessageController extends Controller
 
     public function update(ContactMessage $contactMessage)
     {
-        $contactMessage->update([
-            'is_resolved' => true,
-        ]);
+        $contactMessage->is_resolved = true;
+        $contactMessage->save();
 
         return response()->json([
             'message' => 'تم تحديث حالة الرسالة بنجاح',
