@@ -15,7 +15,7 @@ class BookingController extends Controller
 {
     public function index(Request $request)
     {
-        $bookings = Booking::with(['room', 'user'])
+        $bookings = Booking::with(['room.hotel', 'user'])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->get();
@@ -29,7 +29,7 @@ class BookingController extends Controller
             return response()->json(['message' => 'غير مصرح لك.'], 403);
         }
 
-        return new BookingResource($booking->load(['room', 'user']));
+        return new BookingResource($booking->load(['room.hotel', 'user']));
     }
 
     public function store(StoreBookingRequest $request)
@@ -41,15 +41,15 @@ class BookingController extends Controller
         $isAvailable = !Booking::where('room_id', $room->id)
             ->where('status', '!=', 'cancelled')
             ->where(function ($query) use ($data) {
-               $query->where('check_in_date', '<', $data['check_out_date'])
-      ->where('check_out_date', '>', $data['check_in_date']);
+                $query->where('check_in_date', '<', $data['check_out_date'])
+                    ->where('check_out_date', '>', $data['check_in_date']);
             })
             ->exists();
         if (!$isAvailable) {
             return response()->json(['message' => 'الغرفة غير متاحة في هذه الفترة.'], 422);
         }
 
-      
+
         $checkIn  = now()->parse($data['check_in_date']);
         $checkOut = now()->parse($data['check_out_date']);
         $nights   = $checkIn->diffInDays($checkOut);
@@ -79,44 +79,45 @@ class BookingController extends Controller
 
         $paymentMethod = $data['payment_method'];
 
-if ($paymentMethod === 'wallet') {
-    $wallet = $request->user()->wallet;
+        if ($paymentMethod === 'wallet') {
+            $wallet = $request->user()->wallet;
 
-    if (!$wallet || $wallet->balance < $finalPrice) {
-        return response()->json([
-            'message' => 'رصيد المحفظة غير كافٍ لإتمام الحجز.',
-        ], 422);
-    }
+            if (!$wallet || $wallet->balance < $finalPrice) {
+                return response()->json([
+                    'message' => 'رصيد المحفظة غير كافٍ لإتمام الحجز.',
+                ], 422);
+            }
 
-    $wallet->decrement('balance', $finalPrice);
+            $wallet->decrement('balance', $finalPrice);
 
-    WalletTransaction::create([
-        'wallet_id'        => $wallet->id,
-        'user_id'          => $request->user()->id,
-        'amount'           => $finalPrice,
-        'transaction_type' => 'debit',
-        'transaction_date' => now(),
-    ]);
-}
+            WalletTransaction::create([
+                'wallet_id'        => $wallet->id,
+                'user_id'          => $request->user()->id,
+                'amount'           => $finalPrice,
+                'transaction_type' => 'debit',
+                'transaction_date' => now(),
+            ]);
+        }
 
-       $booking = Booking::create([
-    ...$data,
-    'user_id'         => $request->user()->id,
-    'room_id'         => $room->id,
-    'coupon_id'       => $couponId,
-    'status'          => 'pending',
-    'total_price'     => $totalPrice,
-    'discount_amount' => $discountAmount,
-    'final_price'     => $finalPrice,
-]);
+        $booking = Booking::create([
+            ...$data,
+            'user_id'         => $request->user()->id,
+            'room_id'         => $room->id,
+            'coupon_id'       => $couponId,
+            'status'          => 'pending',
+            'total_price'     => $totalPrice,
+            'discount_amount' => $discountAmount,
+            'final_price'     => $finalPrice,
+        ]);
 
-        return (new BookingResource($booking->load(['room', 'user'])))->response()->setStatusCode(201);
+        return (new BookingResource($booking->load(['room.hotel', 'user'])))->response()
+            ->setStatusCode(201);
     }
 
     public function update(UpdateBookingRequest $request, Booking $booking)
     {
         $booking->update($request->validated());
-        return new BookingResource($booking->load(['room', 'user']));
+        return new BookingResource($booking->load(['room.hotel', 'user']));
     }
 
     public function cancel(Booking $booking, Request $request)
