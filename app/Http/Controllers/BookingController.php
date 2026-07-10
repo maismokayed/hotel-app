@@ -16,7 +16,7 @@ class BookingController extends Controller
 {
     public function index(Request $request)
     {
-        $bookings = Booking::with(['room', 'user'])
+        $bookings = Booking::with(['room.hotel', 'user'])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->get();
@@ -30,7 +30,7 @@ class BookingController extends Controller
             return response()->json(['message' => 'غير مصرح لك.'], 403);
         }
 
-        return new BookingResource($booking->load(['room', 'user']));
+        return new BookingResource($booking->load(['room.hotel', 'user']));
     }
 
     public function store(StoreBookingRequest $request)
@@ -52,6 +52,7 @@ class BookingController extends Controller
         $checkIn    = now()->parse($data['check_in_date']);
         $checkOut   = now()->parse($data['check_out_date']);
         $nights     = $checkIn->diffInDays($checkOut);
+
         $totalPrice = $nights * $room->price_per_night;
 
         $discountAmount = 0;
@@ -74,9 +75,9 @@ class BookingController extends Controller
             $couponId = $coupon->id;
         }
 
-        $finalPrice    = max(0, $totalPrice - $discountAmount);
+        $finalPrice = max(0, $totalPrice - $discountAmount);
         $paymentMethod = $data['payment_method'];
-        $booking       = null;
+        $booking = null;
 
         if ($paymentMethod === 'wallet') {
             $wallet = $request->user()->wallet;
@@ -87,7 +88,17 @@ class BookingController extends Controller
                 ], 422);
             }
 
-            DB::transaction(function () use ($wallet, $request, $finalPrice, $data, $room, $couponId, $totalPrice, $discountAmount, &$booking) {
+            DB::transaction(function () use (
+                $wallet,
+                $request,
+                $finalPrice,
+                $data,
+                $room,
+                $couponId,
+                $totalPrice,
+                $discountAmount,
+                &$booking
+            ) {
                 $wallet->decrement('balance', $finalPrice);
 
                 WalletTransaction::create([
@@ -122,13 +133,14 @@ class BookingController extends Controller
             ]);
         }
 
-        return (new BookingResource($booking->load(['room', 'user'])))->response()->setStatusCode(201);
+        return (new BookingResource($booking->load(['room.hotel', 'user'])))
+            ->response()
+            ->setStatusCode(201);
     }
-
     public function update(UpdateBookingRequest $request, Booking $booking)
     {
         $booking->update($request->validated());
-        return new BookingResource($booking->load(['room', 'user']));
+        return new BookingResource($booking->load(['room.hotel', 'user']));
     }
 
     public function cancel(Booking $booking, Request $request)
@@ -142,6 +154,7 @@ class BookingController extends Controller
         }
 
         $booking->update(['status' => 'cancelled']);
+
         return response()->json(['message' => 'تم إلغاء الحجز بنجاح.']);
     }
 }
