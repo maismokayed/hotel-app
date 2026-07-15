@@ -34,6 +34,7 @@ class HotelResource extends JsonResource
             'star_rating' => $this->star_rating,
 
             'is_active'   => (bool) $this->is_active,
+            'services' => ServiceResource::collection($this->whenLoaded('services')),
 
             'owner' => $this->whenLoaded('user', fn() => new UserResource($this->user)),
         ];

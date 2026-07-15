@@ -198,4 +198,17 @@ class HotelController extends Controller
             'message' => 'Image deleted successfully',
         ]);
     }
+    public function syncServices(Request $request, Hotel $hotel)
+    {
+        $this->authorizeHotelAccess($hotel);
+
+        $validated = $request->validate([
+            'service_ids'   => 'required|array',
+            'service_ids.*' => 'exists:services,id',
+        ]);
+
+        $hotel->services()->sync($validated['service_ids']);
+
+        return new HotelResource($hotel->load('user', 'city', 'services'));
+    }
 }
