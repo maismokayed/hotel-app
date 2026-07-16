@@ -11,6 +11,7 @@ use App\Http\Controllers\WalletController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\ContactMessageController;
+use App\Http\Controllers\ServiceController;
 
 
 //Auth routes
@@ -37,6 +38,7 @@ Route::prefix('hotels')->group(function () {
         Route::delete('/{hotel}', [HotelController::class, 'destroy']);
         Route::post('/{hotel}/images', [HotelController::class, 'uploadImages']);
         Route::delete('/{hotel}/images/{mediaId}', [HotelController::class, 'deleteImage']);
+        Route::post('/{hotel}/services', [HotelController::class, 'syncServices']);
     });
 
     Route::middleware(['auth:sanctum', 'role:admin'])
@@ -104,4 +106,12 @@ Route::post('/contact-us', [ContactMessageController::class, 'store']);
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/contact-us', [ContactMessageController::class, 'index']);
     Route::patch('/contact-us/{contactMessage}', [ContactMessageController::class, 'update']);
+});
+//services routes
+Route::get('services', [ServiceController::class, 'index']);
+
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::post('services', [ServiceController::class, 'store']);
+    Route::put('services/{service}', [ServiceController::class, 'update']);
+    Route::delete('services/{service}', [ServiceController::class, 'destroy']);
 });

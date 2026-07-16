@@ -40,4 +40,12 @@ class Hotel extends Model implements HasMedia
     {
         return $this->belongsTo(City::class);
     }
+    public function rooms()
+    {
+        return $this->hasMany(Room::class);
+    }
+    public function services()
+    {
+        return $this->belongsToMany(Service::class);
+    }
 }
