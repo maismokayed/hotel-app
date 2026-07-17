@@ -23,7 +23,7 @@ class HotelController extends Controller
             ->latest()
             ->paginate(10);
 
-        return HotelResource::collection($hotels->load('user', 'city'));
+        return HotelResource::collection($hotels->load('user', 'city', 'services'));
     }
 
     public function show(Hotel $hotel)
@@ -31,7 +31,7 @@ class HotelController extends Controller
         if (!$hotel->is_active) {
             return response()->json(['message' => 'Hotel not found'], 404);
         }
-        return new HotelResource($hotel->load('user', 'city'));
+        return new HotelResource($hotel->load('user', 'city', 'services'));
     }
 
     public function store(StoreHotelRequest $request)
