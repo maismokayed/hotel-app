@@ -22,11 +22,11 @@ class StoreBookingRequest extends FormRequest
     public function rules(): array
     {
         return [
-             'room_id'          => 'required|exists:rooms,id',
+            'room_id'          => 'required|exists:rooms,id',
             'check_in_date'    => 'required|date|after:today',
             'check_out_date'   => 'required|date|after:check_in_date',
             'number_of_guests' => 'required|integer|min:1',
-            'coupon_id'        => 'nullable|exists:coupons,id',
+            'coupon_code' => 'nullable|string|exists:coupons,code',
             'payment_method' => 'required|in:wallet,cash',
         ];
     }
