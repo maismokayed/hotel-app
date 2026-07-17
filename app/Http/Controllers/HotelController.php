@@ -14,24 +14,21 @@ class HotelController extends Controller
 {
     public function index(Request $request)
     {
-        $hotels = Hotel::where('is_active', true)
-            ->when($request->name, fn($q) =>
-            $q->where('name', 'like', "%{$request->name}%"))
+
+        $hotels = Hotel::when($request->name, fn($q) =>
+        $q->where('name', 'like', "%{$request->name}%"))
             ->when($request->city_id, fn($q) =>
             $q->where('city_id', $request->city_id))
             ->when($request->star_rating, fn($q) =>
             $q->where('star_rating', $request->star_rating))
             ->latest()
             ->paginate(10);
-
         return HotelResource::collection($hotels->load('user', 'city', 'services'));
     }
 
     public function show(Hotel $hotel)
     {
-        if (!$hotel->is_active) {
-            return response()->json(['message' => 'Hotel not found'], 404);
-        }
+
         return new HotelResource($hotel->load('user', 'city', 'services'));
     }
 
