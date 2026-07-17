@@ -54,6 +54,12 @@ class BookingController extends Controller
         $data = $request->validated();
         $room = Room::findOrFail($data['room_id']);
 
+        if (!$room->hotel || !$room->hotel->is_active) {
+            return response()->json([
+                'message' => 'This hotel is currently unavailable.',
+            ], 422);
+        }
+
         $isAvailable = !Booking::where('room_id', $room->id)
             ->where('status', '!=', 'cancelled')
             ->where(function ($query) use ($data) {
@@ -61,6 +67,7 @@ class BookingController extends Controller
                     ->where('check_out_date', '>', $data['check_in_date']);
             })
             ->exists();
+
         if (!$isAvailable) {
             return response()->json(['message' => 'الغرفة غير متاحة في هذه الفترة.'], 422);
         }
