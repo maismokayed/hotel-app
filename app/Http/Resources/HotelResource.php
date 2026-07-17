@@ -19,11 +19,15 @@ class HotelResource extends JsonResource
             'id'          => $this->id,
             'name'        => $this->name,
             'description' => $this->description,
-            'city' => $this->whenLoaded('city', fn() => [
-                'id'        => $this->city->id,
-                'name'      => $this->city->name,
-                'image_url' => $this->city->getFirstMediaUrl('images') ?: null,
-            ]),
+            'city' => $this->whenLoaded(
+                'city',
+                fn() =>
+                $this->city ? [
+                    'id'        => $this->city->id,
+                    'name'      => $this->city->name,
+                    'image_url' => $this->city->getFirstMediaUrl('images') ?: null,
+                ] : null
+            ),
             'address'     => $this->address,
 
             'contact' => [
