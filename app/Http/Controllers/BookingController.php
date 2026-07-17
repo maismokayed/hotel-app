@@ -53,6 +53,11 @@ class BookingController extends Controller
         $data = $request->validated();
         $room = Room::findOrFail($data['room_id']);
 
+        if (!$room->hotel || !$room->hotel->is_active) {
+            return response()->json([
+                'message' => 'This hotel is currently unavailable.',
+            ], 422);
+        }
 
         $isAvailable = !Booking::where('room_id', $room->id)
             ->where('status', '!=', 'cancelled')

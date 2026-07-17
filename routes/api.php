@@ -34,6 +34,7 @@ Route::prefix('hotels')->group(function () {
     Route::middleware(['auth:sanctum', 'role:admin|manager'])->group(function () {
         Route::post('/', [HotelController::class, 'store']);
         Route::put('/{hotel}', [HotelController::class, 'update']);
+        Route::patch('/{hotel}/status', [HotelController::class, 'updateStatus']);
         Route::patch('/{hotel}', [HotelController::class, 'update']);
         Route::delete('/{hotel}', [HotelController::class, 'destroy']);
         Route::post('/{hotel}/images', [HotelController::class, 'uploadImages']);

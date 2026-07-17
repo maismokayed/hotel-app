@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateHotelRequest;
 use App\Http\Resources\HotelResource;
 use App\Http\Requests\TransferHotelRequest;
 use Illuminate\Http\Request;
+use App\Http\Requests\UpdateHotelStatusRequest;
 
 class HotelController extends Controller
 {
@@ -210,5 +211,20 @@ class HotelController extends Controller
         $hotel->services()->sync($validated['service_ids']);
 
         return new HotelResource($hotel->load('user', 'city', 'services'));
+    }
+    public function updateStatus(UpdateHotelStatusRequest $request, Hotel $hotel)
+    {
+        $this->authorizeHotelAccess($hotel);
+
+        $hotel->update([
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return response()->json([
+            'message' => 'Hotel status updated successfully',
+            'hotel' => new HotelResource(
+                $hotel->fresh()->load('user', 'city', 'services')
+            ),
+        ]);
     }
 }
