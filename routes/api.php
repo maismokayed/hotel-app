@@ -23,6 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/users', [AuthController::class, 'index']);
+    Route::delete('/profile', [AuthController::class, 'deleteAccount']);
 });
 //         hotel routes
 Route::prefix('hotels')->group(function () {

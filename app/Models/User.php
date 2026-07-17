@@ -20,7 +20,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-       'full_name',
+        'full_name',
         'email',
         'phone',
         'password',
@@ -33,7 +33,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
-         'remember_token',
+        'remember_token',
     ];
 
     /**
@@ -42,20 +42,24 @@ class User extends Authenticatable
      * @return array<string, string>
      */
     protected $casts = [
-    'email_verified_at' => 'datetime',
-    'password' => 'hashed',
-];
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 
-public function bookings()
-{
-    return $this->hasMany(Booking::class);
-}
-public function reviews()
-{
-    return $this->hasMany(Review::class);
-}
-public function wallet()
-{
-    return $this->hasOne(Wallet::class);
-}
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class);
+    }
+    public function hotels()
+    {
+        return $this->hasMany(Hotel::class);
+    }
 }
