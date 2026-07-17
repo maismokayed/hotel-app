@@ -12,6 +12,7 @@ use App\Http\Requests\StoreBookingRequest;
 use App\Http\Requests\UpdateBookingRequest;
 use App\Http\Resources\BookingResource;
 
+
 class BookingController extends Controller
 {
     public function index(Request $request)
@@ -52,105 +53,126 @@ class BookingController extends Controller
     public function store(StoreBookingRequest $request)
     {
         $data = $request->validated();
-        $room = Room::findOrFail($data['room_id']);
 
-        if (!$room->hotel || !$room->hotel->is_active) {
-            return response()->json([
-                'message' => 'This hotel is currently unavailable.',
-            ], 422);
-        }
+        return DB::transaction(function () use ($data, $request) {
 
-        $isAvailable = !Booking::where('room_id', $room->id)
-            ->where('status', '!=', 'cancelled')
-            ->where(function ($query) use ($data) {
-                $query->where('check_in_date', '<', $data['check_out_date'])
-                    ->where('check_out_date', '>', $data['check_in_date']);
-            })
-            ->exists();
 
-        if (!$isAvailable) {
-            return response()->json(['message' => 'الغرفة غير متاحة في هذه الفترة.'], 422);
-        }
+            $room = Room::where('id', $data['room_id'])
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $checkIn  = now()->parse($data['check_in_date']);
-        $checkOut = now()->parse($data['check_out_date']);
-        $nights   = $checkIn->diffInDays($checkOut);
-        $totalPrice = $nights * $room->price_per_night;
-
-        $discountAmount = 0;
-        $couponId = null;
-
-        if (!empty($data['coupon_id'])) {
-            $coupon = Coupon::find($data['coupon_id']);
-
-            if (!$coupon || !$coupon->isValid()) {
-                return response()->json(['message' => 'الكوبون غير صالح أو منتهي الصلاحية.'], 422);
-            }
-
-            if ($coupon->discount_type === 'percentage') {
-                $discountAmount = $totalPrice * ($coupon->discount_value / 100);
-            } else {
-                $discountAmount = $coupon->discount_value;
-            }
-
-            $coupon->increment('used_count');
-            $couponId = $coupon->id;
-        }
-
-        $finalPrice = max(0, $totalPrice - $discountAmount);
-
-        $paymentMethod = $data['payment_method'];
-        $booking = null;
-
-        if ($paymentMethod === 'wallet') {
-            $wallet = $request->user()->wallet;
-
-            if (!$wallet || $wallet->balance < $finalPrice) {
+            if (!$room->hotel || !$room->hotel->is_active) {
                 return response()->json([
-                    'message' => 'رصيد المحفظة غير كافٍ لإتمام الحجز.',
+                    'message' => 'This hotel is currently unavailable.',
                 ], 422);
             }
 
-            DB::transaction(function () use ($wallet, $request, $finalPrice, $data, $room, $couponId, $totalPrice, $discountAmount, &$booking) {
+
+            $isAvailable = !Booking::where('room_id', $room->id)
+                ->where('status', '!=', 'cancelled')
+                ->where(function ($query) use ($data) {
+                    $query->where('check_in_date', '<', $data['check_out_date'])
+                        ->where('check_out_date', '>', $data['check_in_date']);
+                })
+                ->lockForUpdate()
+                ->exists();
+
+
+            if (!$isAvailable) {
+                return response()->json([
+                    'message' => 'الغرفة غير متاحة في هذه الفترة.'
+                ], 422);
+            }
+
+
+            $checkIn = now()->parse($data['check_in_date']);
+            $checkOut = now()->parse($data['check_out_date']);
+
+            $nights = $checkIn->diffInDays($checkOut);
+            $totalPrice = $nights * $room->price_per_night;
+
+
+            $discountAmount = 0;
+            $couponId = null;
+            $coupon = null;
+
+
+            if (!empty($data['coupon_code'])) {
+
+                $coupon = Coupon::where('code', $data['coupon_code'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$coupon || !$coupon->isValid()) {
+                    return response()->json([
+                        'message' => 'الكوبون غير صالح أو منتهي الصلاحية.'
+                    ], 422);
+                }
+
+
+                if ($coupon->discount_type === 'percentage') {
+                    $discountAmount = $totalPrice * ($coupon->discount_value / 100);
+                } else {
+                    $discountAmount = $coupon->discount_value;
+                }
+
+                $couponId = $coupon->id;
+            }
+
+
+            $finalPrice = max(0, $totalPrice - $discountAmount);
+
+
+            if ($data['payment_method'] === 'wallet') {
+
+                $wallet = $request->user()->wallet;
+
+                if (!$wallet || $wallet->balance < $finalPrice) {
+                    return response()->json([
+                        'message' => 'رصيد المحفظة غير كافٍ لإتمام الحجز.'
+                    ], 422);
+                }
+
+
                 $wallet->decrement('balance', $finalPrice);
 
+
                 WalletTransaction::create([
-                    'wallet_id'        => $wallet->id,
-                    'user_id'          => $request->user()->id,
-                    'amount'           => $finalPrice,
+                    'wallet_id' => $wallet->id,
+                    'user_id' => $request->user()->id,
+                    'amount' => $finalPrice,
                     'transaction_type' => 'debit',
                     'transaction_date' => now(),
                 ]);
+            }
 
-                $booking = Booking::create([
-                    ...$data,
-                    'user_id'         => $request->user()->id,
-                    'room_id'         => $room->id,
-                    'coupon_id'       => $couponId,
-                    'status'          => 'pending',
-                    'total_price'     => $totalPrice,
-                    'discount_amount' => $discountAmount,
-                    'final_price'     => $finalPrice,
-                ]);
-            });
-        } else {
+
             $booking = Booking::create([
                 ...$data,
-                'user_id'         => $request->user()->id,
-                'room_id'         => $room->id,
-                'coupon_id'       => $couponId,
-                'status'          => 'pending',
-                'total_price'     => $totalPrice,
+                'user_id' => $request->user()->id,
+                'room_id' => $room->id,
+                'coupon_id' => $couponId,
+                'status' => 'pending',
+                'total_price' => $totalPrice,
                 'discount_amount' => $discountAmount,
-                'final_price'     => $finalPrice,
+                'final_price' => $finalPrice,
             ]);
-        }
 
-        return (new BookingResource($booking->load(['room.hotel', 'user'])))
-            ->response()
-            ->setStatusCode(201);
+
+
+            // زيادة استخدام الكوبون فقط بعد نجاح إنشاء الحجز
+            if ($coupon) {
+                $coupon->increment('used_count');
+            }
+
+
+            return (new BookingResource(
+                $booking->load(['room.hotel', 'user'])
+            ))
+                ->response()
+                ->setStatusCode(201);
+        });
     }
-
     public function update(UpdateBookingRequest $request, Booking $booking)
     {
         $booking->update($request->validated());
