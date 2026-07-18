@@ -25,12 +25,20 @@ class BookingResource extends JsonResource
             'room' => $this->room ? [
                 'id'              => $this->room->id,
                 'room_number'     => $this->room->room_number,
-                'type'            => $this->room->type,
+
+                'type' => [
+                    'value' => $this->room->type->value,
+                    'label' => $this->room->type->label(),
+                ],
+
                 'price_per_night' => $this->room->price_per_night,
 
                 'hotel' => $this->room->hotel ? [
-                    'id'        => $this->room->hotel->id,
-                    'name'      => $this->room->hotel->name,
+                    'id'   => $this->room->hotel->id,
+                    'name' => [
+                        'ar' => $this->room->hotel->name_ar,
+                        'en' => $this->room->hotel->name_en,
+                    ],
                     'image_url' => $this->room->hotel->getFirstMediaUrl('images'),
                 ] : null,
             ] : null,

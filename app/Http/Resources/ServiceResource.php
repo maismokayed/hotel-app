@@ -10,8 +10,11 @@ class ServiceResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'   => $this->id,
-            'name' => $this->name,
+            'id' => $this->id,
+            'name' => [
+                'ar' => $this->name_ar,
+                'en' => $this->name_en,
+            ],
         ];
     }
 }

@@ -83,7 +83,7 @@ Route::prefix('rooms')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']);
 });
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 });
 //wallet routes

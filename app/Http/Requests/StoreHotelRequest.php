@@ -23,10 +23,17 @@ class StoreHotelRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:100',
-            'description' => 'nullable|string',
+            'name_ar' => 'required|string|max:100',
+            'name_en' => 'required|string|max:100',
+
+            'description_ar' => 'nullable|string',
+            'description_en' => 'nullable|string',
+
             'city_id' => 'required|exists:cities,id',
-            'address' => 'required|string',
+
+            'address_ar' => 'required|string',
+            'address_en' => 'required|string',
+
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email',
             'star_rating' => 'nullable|integer|min:1|max:5',

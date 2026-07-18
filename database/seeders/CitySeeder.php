@@ -14,17 +14,18 @@ class CitySeeder extends Seeder
     public function run(): void
     {
         $cities = [
-            'Aleppo',
-            'Damascus',
-            'Homs',
-            'Hama',
-            'Latakia',
-            'Tartus',
-            'Deir ez-Zor',
-            'Raqqa',
+            ['name_ar' => 'حلب',       'name_en' => 'Aleppo'],
+            ['name_ar' => 'دمشق',      'name_en' => 'Damascus'],
+            ['name_ar' => 'حمص',       'name_en' => 'Homs'],
+            ['name_ar' => 'حماة',      'name_en' => 'Hama'],
+            ['name_ar' => 'اللاذقية',  'name_en' => 'Latakia'],
+            ['name_ar' => 'طرطوس',     'name_en' => 'Tartus'],
+            ['name_ar' => 'دير الزور', 'name_en' => 'Deir ez-Zor'],
+            ['name_ar' => 'الرقة',     'name_en' => 'Raqqa'],
         ];
+
         foreach ($cities as $city) {
-            City::create(['name' => $city]);
+            City::create($city);
         }
     }
 }

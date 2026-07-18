@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateCouponRequest extends FormRequest
 {
@@ -21,10 +22,17 @@ class UpdateCouponRequest extends FormRequest
      */
     public function rules(): array
     {
+        $discountType = $this->input('discount_type', $this->coupon->discount_type);
+
         return [
-             'code'           => 'sometimes|string|unique:coupons,code,'.$this->coupon->id,
+            'code'           => 'sometimes|string|unique:coupons,code,' . $this->coupon->id,
             'discount_type'  => 'sometimes|in:percentage,fixed',
-            'discount_value' => 'sometimes|numeric|min:1',
+            'discount_value' => [
+                'sometimes',
+                'numeric',
+                'min:1',
+                Rule::when($discountType === 'percentage', ['max:100']),
+            ],
             'max_uses'       => 'nullable|integer|min:1',
             'expires_at'     => 'nullable|date|after:today',
             'is_active'      => 'sometimes|boolean',

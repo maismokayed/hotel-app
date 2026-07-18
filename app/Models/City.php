@@ -13,7 +13,8 @@ class City extends Model implements HasMedia
     use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
-        'name'
+        'name_ar',
+        'name_en',
     ];
 
     public function hotels()

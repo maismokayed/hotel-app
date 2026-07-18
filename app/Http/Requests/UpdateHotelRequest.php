@@ -22,14 +22,21 @@ class UpdateHotelRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'sometimes|string|max:100',
-            'description' => 'nullable|string',
+            'name_ar' => 'sometimes|string|max:100',
+            'name_en' => 'sometimes|string|max:100',
+
+            'description_ar' => 'nullable|string',
+            'description_en' => 'nullable|string',
+
             'city_id' => 'sometimes|exists:cities,id',
-            'address' => 'sometimes|string',
+
+            'address_ar' => 'sometimes|string',
+            'address_en' => 'sometimes|string',
+
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email',
             'star_rating' => 'nullable|integer|min:1|max:5',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
         ];
     }
 }
