@@ -1,4 +1,5 @@
 <?php
+
 use App\Models\User;
 use App\Models\Room;
 use App\Models\Hotel;
@@ -42,12 +43,18 @@ it('can create a booking successfully', function () {
         ]);
 
     $response->assertStatus(201)
-         ->assertJsonStructure([
-             'data' => [
-                 'id', 'room', 'user', 'check_in_date',
-                 'check_out_date', 'status', 'total_price', 'final_price'
-             ]
-         ]);
+        ->assertJsonStructure([
+            'data' => [
+                'id',
+                'room',
+                'user',
+                'check_in_date',
+                'check_out_date',
+                'status',
+                'total_price',
+                'final_price'
+            ]
+        ]);
 
     $this->assertDatabaseHas('bookings', [
         'user_id' => $this->user->id,
@@ -72,12 +79,12 @@ it('cannot book an unavailable room', function () {
             'check_in_date'    => now()->addDays(3)->format('Y-m-d'),
             'check_out_date'   => now()->addDays(6)->format('Y-m-d'),
             'number_of_guests' => 2,
-                    'payment_method'   => 'cash',
+            'payment_method'   => 'cash',
 
         ]);
 
     $response->assertStatus(422)
-             ->assertJson(['message' => 'الغرفة غير متاحة في هذه الفترة.']);
+        ->assertJson(['message' => 'الغرفة غير متاحة في هذه الفترة.']);
 });
 
 it('can apply a valid coupon', function () {
@@ -86,7 +93,6 @@ it('can apply a valid coupon', function () {
         'discount_value' => 10,
         'is_active'      => true,
         'expires_at'     => now()->addDays(10),
-        
     ]);
 
     $response = $this->actingAs($this->user)
@@ -95,17 +101,17 @@ it('can apply a valid coupon', function () {
             'check_in_date'    => now()->addDays(2)->format('Y-m-d'),
             'check_out_date'   => now()->addDays(4)->format('Y-m-d'),
             'number_of_guests' => 2,
-            'coupon_id'        => $coupon->id,
+            'coupon_code'      => $coupon->code,
             'payment_method'   => 'cash',
         ]);
 
     $response->assertStatus(201);
-expect($response->json('data.discount_amount'))->toBeGreaterThan(0);
+    expect($response->json('data.discount_amount'))->toBeGreaterThan(0);
 });
 
 it('cannot apply an invalid coupon', function () {
     $coupon = Coupon::factory()->create([
-        'is_active'  => false,
+        'is_active' => false,
     ]);
 
     $response = $this->actingAs($this->user)
@@ -114,12 +120,12 @@ it('cannot apply an invalid coupon', function () {
             'check_in_date'    => now()->addDays(2)->format('Y-m-d'),
             'check_out_date'   => now()->addDays(4)->format('Y-m-d'),
             'number_of_guests' => 2,
-            'coupon_id'        => $coupon->id,
+            'coupon_code'      => $coupon->code,
             'payment_method'   => 'cash',
         ]);
 
     $response->assertStatus(422)
-             ->assertJson(['message' => 'الكوبون غير صالح أو منتهي الصلاحية.']);
+        ->assertJson(['message' => 'الكوبون غير صالح أو منتهي الصلاحية.']);
 });
 
 // ============================================================
@@ -135,8 +141,8 @@ it('can list own bookings', function () {
     $response = $this->actingAs($this->user)
         ->getJson('/api/bookings');
 
-   $response->assertOk()
-         ->assertJsonCount(3, 'data');
+    $response->assertOk()
+        ->assertJsonCount(3, 'data');
 });
 
 // ============================================================
@@ -154,7 +160,7 @@ it('can cancel own pending booking', function () {
         ->patchJson("/api/bookings/{$booking->id}/cancel");
 
     $response->assertOk()
-             ->assertJson(['message' => 'تم إلغاء الحجز بنجاح.']);
+        ->assertJson(['message' => 'تم إلغاء الحجز بنجاح.']);
 
     $this->assertDatabaseHas('bookings', [
         'id'     => $booking->id,
