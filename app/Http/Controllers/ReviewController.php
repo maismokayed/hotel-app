@@ -50,8 +50,14 @@ class ReviewController extends Controller
         return (new ReviewResource($review->load('user')))->response()->setStatusCode(201);
     }
 
-    public function destroy(Review $review)
+    public function destroy(Review $review, Request $request)
     {
+        $user = $request->user();
+
+        if ($review->user_id !== $user->id && !$user->hasRole('admin')) {
+            return response()->json(['message' => 'غير مصرح لك بهذا الإجراء.'], 403);
+        }
+
         $review->delete();
         return response()->json(['message' => 'تم حذف التقييم بنجاح.']);
     }
