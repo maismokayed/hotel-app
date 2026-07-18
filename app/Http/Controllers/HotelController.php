@@ -16,7 +16,10 @@ class HotelController extends Controller
     {
 
         $hotels = Hotel::when($request->name, fn($q) =>
-        $q->where('name', 'like', "%{$request->name}%"))
+        $q->where(function ($query) use ($request) {
+            $query->where('name_ar', 'like', "%{$request->name}%")
+                ->orWhere('name_en', 'like', "%{$request->name}%");
+        }))
             ->when($request->city_id, fn($q) =>
             $q->where('city_id', $request->city_id))
             ->when($request->star_rating, fn($q) =>
@@ -36,7 +39,7 @@ class HotelController extends Controller
     {
         $data = $request->validated();
 
-        $similarHotel = Hotel::where('name', trim($data['name']))
+        $similarHotel = Hotel::where('name_en', trim($data['name_en']))
             ->where('city_id', $data['city_id'])
             ->first();
 
@@ -48,10 +51,13 @@ class HotelController extends Controller
         }
 
         $hotel = new Hotel();
-        $hotel->name = trim($data['name']);
-        $hotel->description = $data['description'] ?? null;
+        $hotel->name_ar = trim($data['name_ar']);
+        $hotel->name_en = trim($data['name_en']);
+        $hotel->description_ar = $data['description_ar'] ?? null;
+        $hotel->description_en = $data['description_en'] ?? null;
+        $hotel->address_ar = trim($data['address_ar']);
+        $hotel->address_en = trim($data['address_en']);
         $hotel->city_id = $data['city_id'];
-        $hotel->address = trim($data['address']);
         $hotel->phone = $data['phone'] ?? null;
         $hotel->email = $data['email'] ?? null;
         $hotel->star_rating = $data['star_rating'] ?? null;
@@ -71,7 +77,10 @@ class HotelController extends Controller
 
         $data = $request->validated();
 
-        $similarHotel = Hotel::where('name', trim($data['name'] ?? $hotel->name))
+        $similarHotel = Hotel::where(
+            'name_en',
+            trim($data['name_en'] ?? $hotel->name_en)
+        )
             ->where('city_id', $data['city_id'] ?? $hotel->city_id)
             ->where('id', '!=', $hotel->id)
             ->first();
@@ -84,10 +93,17 @@ class HotelController extends Controller
         }
 
         $hotel->update([
-            'name' => trim($data['name'] ?? $hotel->name),
-            'description' => $data['description'] ?? $hotel->description,
+            'name_ar' => trim($data['name_ar'] ?? $hotel->name_ar),
+            'name_en' => trim($data['name_en'] ?? $hotel->name_en),
+
+            'description_ar' => $data['description_ar'] ?? $hotel->description_ar,
+            'description_en' => $data['description_en'] ?? $hotel->description_en,
+
             'city_id' => $data['city_id'] ?? $hotel->city_id,
-            'address' => trim($data['address'] ?? $hotel->address),
+
+            'address_ar' => trim($data['address_ar'] ?? $hotel->address_ar),
+            'address_en' => trim($data['address_en'] ?? $hotel->address_en),
+
             'phone' => $data['phone'] ?? $hotel->phone,
             'email' => $data['email'] ?? $hotel->email,
             'star_rating' => $data['star_rating'] ?? $hotel->star_rating,

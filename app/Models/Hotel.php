@@ -13,10 +13,13 @@ class Hotel extends Model implements HasMedia
     use HasFactory, SoftDeletes, InteractsWithMedia;
 
     protected $fillable = [
-        'name',
-        'description',
+        'name_ar',
+        'name_en',
+        'description_ar',
+        'description_en',
         'city_id',
-        'address',
+        'address_ar',
+        'address_en',
         'phone',
         'email',
         'star_rating',

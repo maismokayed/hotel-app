@@ -10,7 +10,8 @@ class Service extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
+        'name_ar',
+        'name_en',
     ];
 
     public function hotels()

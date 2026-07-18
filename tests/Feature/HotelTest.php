@@ -20,32 +20,24 @@ beforeEach(function () {
 // INDEX
 // ============================================================
 
-it('returns only active hotels', function () {
+it('returns all hotels regardless of active status', function () {
     Hotel::factory()->create(['is_active' => true]);
     Hotel::factory()->create(['is_active' => false]);
 
     $response = $this->getJson('/api/hotels');
 
     $response->assertOk()
-        ->assertJsonCount(1, 'data');
+        ->assertJsonCount(2, 'data');
 });
-
 // ============================================================
 // SHOW
 // ============================================================
-
-it('returns hotel if active', function () {
-    $hotel = Hotel::factory()->create(['is_active' => true]);
-
-    $this->getJson("/api/hotels/{$hotel->id}")
-        ->assertOk();
-});
-
-it('returns 404 if hotel is not active', function () {
+it('shows hotel even if not active', function () {
     $hotel = Hotel::factory()->create(['is_active' => false]);
 
     $this->getJson("/api/hotels/{$hotel->id}")
-        ->assertNotFound();
+        ->assertOk()
+        ->assertJsonPath('data.is_active', false);
 });
 
 // ============================================================
@@ -60,9 +52,11 @@ it('admin can create a hotel', function () {
 
     $this->actingAs($admin)
         ->postJson('/api/hotels', [
-            'name'        => 'Test Hotel',
+            'name_ar'     => 'فندق تجريبي',
+            'name_en'     => 'Test Hotel',
             'city_id'     => $city->id,
-            'address'     => 'Main Street',
+            'address_ar'  => 'الشارع الرئيسي',
+            'address_en'  => 'Main Street',
             'star_rating' => 4,
         ])
         ->assertCreated();
@@ -76,9 +70,11 @@ it('manager can create a hotel', function () {
 
     $this->actingAs($manager)
         ->postJson('/api/hotels', [
-            'name'        => 'Test Hotel',
+            'name_ar'     => 'فندق تجريبي',
+            'name_en'     => 'Test Hotel',
             'city_id'     => $city->id,
-            'address'     => 'Main Street',
+            'address_ar'  => 'الشارع الرئيسي',
+            'address_en'  => 'Main Street',
             'star_rating' => 3,
         ])
         ->assertCreated();
@@ -88,9 +84,11 @@ it('guest cannot create a hotel', function () {
     $city = City::first();
 
     $this->postJson('/api/hotels', [
-        'name'    => 'Test Hotel',
-        'city_id' => $city->id,
-        'address' => 'Main Street',
+        'name_ar'    => 'فندق تجريبي',
+        'name_en'    => 'Test Hotel',
+        'city_id'    => $city->id,
+        'address_ar' => 'الشارع الرئيسي',
+        'address_en' => 'Main Street',
     ])
         ->assertUnauthorized();
 });
@@ -102,15 +100,18 @@ it('rejects duplicate hotel in same city', function () {
     $admin->assignRole('admin');
 
     Hotel::factory()->create([
-        'name'    => 'Grand Hotel',
+        'name_ar' => 'فندق جراند',
+        'name_en' => 'Grand Hotel',
         'city_id' => $city->id,
     ]);
 
     $this->actingAs($admin)
         ->postJson('/api/hotels', [
-            'name'    => 'Grand Hotel',
-            'city_id' => $city->id,
-            'address' => 'Some Street',
+            'name_ar'    => 'فندق جراند',
+            'name_en'    => 'Grand Hotel',
+            'city_id'    => $city->id,
+            'address_ar' => 'شارع آخر',
+            'address_en' => 'Some Street',
         ])
         ->assertStatus(409);
 });
@@ -138,7 +139,8 @@ it('owner can update their hotel', function () {
 
     $this->actingAs($manager)
         ->putJson("/api/hotels/{$hotel->id}", [
-            'name' => 'Updated Name',
+            'name_ar' => 'اسم محدث',
+            'name_en' => 'Updated Name',
         ])
         ->assertOk();
 });
@@ -151,7 +153,8 @@ it('admin can update any hotel', function () {
 
     $this->actingAs($admin)
         ->putJson("/api/hotels/{$hotel->id}", [
-            'name' => 'Updated By Admin',
+            'name_ar' => 'محدث من الأدمن',
+            'name_en' => 'Updated By Admin',
         ])
         ->assertOk();
 });
@@ -164,7 +167,8 @@ it('manager cannot update hotel they do not own', function () {
 
     $this->actingAs($manager)
         ->putJson("/api/hotels/{$hotel->id}", [
-            'name' => 'Hacked Name',
+            'name_ar' => 'اسم مخترق',
+            'name_en' => 'Hacked Name',
         ])
         ->assertForbidden();
 });
