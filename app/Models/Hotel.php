@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use App\Models\Booking;
+use App\Models\Room;
+
 
 class Hotel extends Model implements HasMedia
 {
@@ -50,5 +53,9 @@ class Hotel extends Model implements HasMedia
     public function services()
     {
         return $this->belongsToMany(Service::class);
+    }
+    public function bookings()
+    {
+        return $this->hasManyThrough(Booking::class, Room::class);
     }
 }
