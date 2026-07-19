@@ -54,11 +54,16 @@ class ReviewController extends Controller
     {
         $user = $request->user();
 
-        if ($review->user_id !== $user->id && !$user->hasRole('admin')) {
-            return response()->json(['message' => 'غير مصرح لك بهذا الإجراء.'], 403);
+        if (! $user->hasRole('admin')) {
+            return response()->json([
+                'message' => 'غير مصرح لك بهذا الإجراء.'
+            ], 403);
         }
 
         $review->delete();
-        return response()->json(['message' => 'تم حذف التقييم بنجاح.']);
+
+        return response()->json([
+            'message' => 'تم حذف التقييم بنجاح.'
+        ]);
     }
 }
