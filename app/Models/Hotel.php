@@ -56,6 +56,6 @@ class Hotel extends Model implements HasMedia
     }
     public function bookings()
     {
-        return $this->hasManyThrough(Booking::class, Room::class);
+        return $this->hasMany(Booking::class);
     }
 }
