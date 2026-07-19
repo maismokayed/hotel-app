@@ -7,41 +7,37 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class BookingResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(Request $request): array
     {
         return [
             'id'   => $this->id,
+
             'user' => $this->user ? [
                 'id'        => $this->user->id,
                 'full_name' => $this->user->full_name,
                 'email'     => $this->user->email,
             ] : null,
 
-            'room' => $this->room ? [
-                'id'              => $this->room->id,
-                'room_number'     => $this->room->room_number,
-
-                'type' => [
-                    'value' => $this->room->type->value,
-                    'label' => $this->room->type->label(),
+            'hotel' => $this->hotel ? [
+                'id'   => $this->hotel->id,
+                'name' => [
+                    'ar' => $this->hotel->name_ar,
+                    'en' => $this->hotel->name_en,
                 ],
-
-                'price_per_night' => $this->room->price_per_night,
-
-                'hotel' => $this->room->hotel ? [
-                    'id'   => $this->room->hotel->id,
-                    'name' => [
-                        'ar' => $this->room->hotel->name_ar,
-                        'en' => $this->room->hotel->name_en,
-                    ],
-                    'image_url' => $this->room->hotel->getFirstMediaUrl('images'),
-                ] : null,
+                'image_url' => $this->hotel->getFirstMediaUrl('images'),
             ] : null,
+
+            'rooms' => $this->whenLoaded('rooms', function () {
+                return $this->rooms->map(fn($room) => [
+                    'id'              => $room->id,
+                    'room_number'     => $room->room_number,
+                    'type' => [
+                        'value' => $room->type->value,
+                        'label' => $room->type->label(),
+                    ],
+                    'price_per_night' => $room->price_per_night,
+                ]);
+            }),
 
             'check_in_date'    => optional($this->check_in_date)->format('Y-m-d H:i'),
             'check_out_date'   => optional($this->check_out_date)->format('Y-m-d H:i'),

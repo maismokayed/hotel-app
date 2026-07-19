@@ -15,16 +15,15 @@ beforeEach(function () {
     app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
     $this->seed(RoleSeeder::class);
 
-    // يوزر عادي
     $this->user = User::factory()->create();
     $this->user->assignRole('user');
 
-    // فندق وغرفة
-    $this->hotel = Hotel::factory()->create();
+    $this->hotel = Hotel::factory()->create(['is_active' => true]);
     $this->room = Room::factory()->create([
-        'hotel_id'       => $this->hotel->id,
+        'hotel_id'        => $this->hotel->id,
+        'type'            => 'single',
         'price_per_night' => 100,
-        'status'         => 'available',
+        'status'          => 'available',
     ]);
 });
 
@@ -35,7 +34,10 @@ beforeEach(function () {
 it('can create a booking successfully', function () {
     $response = $this->actingAs($this->user)
         ->postJson('/api/bookings', [
-            'room_id'          => $this->room->id,
+            'hotel_id'         => $this->hotel->id,
+            'rooms'            => [
+                ['type' => 'single', 'quantity' => 1],
+            ],
             'check_in_date'    => now()->addDays(2)->format('Y-m-d'),
             'check_out_date'   => now()->addDays(5)->format('Y-m-d'),
             'number_of_guests' => 2,
@@ -46,7 +48,8 @@ it('can create a booking successfully', function () {
         ->assertJsonStructure([
             'data' => [
                 'id',
-                'room',
+                'hotel',
+                'rooms',
                 'user',
                 'check_in_date',
                 'check_out_date',
@@ -57,34 +60,40 @@ it('can create a booking successfully', function () {
         ]);
 
     $this->assertDatabaseHas('bookings', [
-        'user_id' => $this->user->id,
+        'user_id'  => $this->user->id,
+        'hotel_id' => $this->hotel->id,
+        'status'   => 'pending',
+    ]);
+
+    $this->assertDatabaseHas('booking_room', [
         'room_id' => $this->room->id,
-        'status'  => 'pending',
     ]);
 });
 
-it('cannot book an unavailable room', function () {
+it('cannot book when not enough rooms of a type are available', function () {
     Booking::factory()->create([
-        'room_id'        => $this->room->id,
+        'hotel_id'       => $this->hotel->id,
         'user_id'        => $this->user->id,
         'check_in_date'  => now()->addDays(2),
         'check_out_date' => now()->addDays(5),
         'status'         => 'confirmed',
-        'payment_method'   => 'cash',
-    ]);
+        'payment_method' => 'cash',
+    ])->rooms()->attach($this->room->id);
 
     $response = $this->actingAs($this->user)
         ->postJson('/api/bookings', [
-            'room_id'          => $this->room->id,
+            'hotel_id'         => $this->hotel->id,
+            'rooms'            => [
+                ['type' => 'single', 'quantity' => 1],
+            ],
             'check_in_date'    => now()->addDays(3)->format('Y-m-d'),
             'check_out_date'   => now()->addDays(6)->format('Y-m-d'),
             'number_of_guests' => 2,
             'payment_method'   => 'cash',
-
         ]);
 
     $response->assertStatus(422)
-        ->assertJson(['message' => 'الغرفة غير متاحة في هذه الفترة.']);
+        ->assertJson(['message' => 'Not enough available rooms.']);
 });
 
 it('can apply a valid coupon', function () {
@@ -97,7 +106,10 @@ it('can apply a valid coupon', function () {
 
     $response = $this->actingAs($this->user)
         ->postJson('/api/bookings', [
-            'room_id'          => $this->room->id,
+            'hotel_id'         => $this->hotel->id,
+            'rooms'            => [
+                ['type' => 'single', 'quantity' => 1],
+            ],
             'check_in_date'    => now()->addDays(2)->format('Y-m-d'),
             'check_out_date'   => now()->addDays(4)->format('Y-m-d'),
             'number_of_guests' => 2,
@@ -116,7 +128,10 @@ it('cannot apply an invalid coupon', function () {
 
     $response = $this->actingAs($this->user)
         ->postJson('/api/bookings', [
-            'room_id'          => $this->room->id,
+            'hotel_id'         => $this->hotel->id,
+            'rooms'            => [
+                ['type' => 'single', 'quantity' => 1],
+            ],
             'check_in_date'    => now()->addDays(2)->format('Y-m-d'),
             'check_out_date'   => now()->addDays(4)->format('Y-m-d'),
             'number_of_guests' => 2,
@@ -134,9 +149,9 @@ it('cannot apply an invalid coupon', function () {
 
 it('can list own bookings', function () {
     Booking::factory()->count(3)->create([
-        'user_id' => $this->user->id,
-        'room_id' => $this->room->id,
-    ]);
+        'user_id'  => $this->user->id,
+        'hotel_id' => $this->hotel->id,
+    ])->each(fn($booking) => $booking->rooms()->attach($this->room->id));
 
     $response = $this->actingAs($this->user)
         ->getJson('/api/bookings');
@@ -151,10 +166,11 @@ it('can list own bookings', function () {
 
 it('can cancel own pending booking', function () {
     $booking = Booking::factory()->create([
-        'user_id' => $this->user->id,
-        'room_id' => $this->room->id,
-        'status'  => 'pending',
+        'user_id'  => $this->user->id,
+        'hotel_id' => $this->hotel->id,
+        'status'   => 'pending',
     ]);
+    $booking->rooms()->attach($this->room->id);
 
     $response = $this->actingAs($this->user)
         ->patchJson("/api/bookings/{$booking->id}/cancel");
@@ -170,10 +186,11 @@ it('can cancel own pending booking', function () {
 
 it('cannot cancel a confirmed booking', function () {
     $booking = Booking::factory()->create([
-        'user_id' => $this->user->id,
-        'room_id' => $this->room->id,
-        'status'  => 'confirmed',
+        'user_id'  => $this->user->id,
+        'hotel_id' => $this->hotel->id,
+        'status'   => 'confirmed',
     ]);
+    $booking->rooms()->attach($this->room->id);
 
     $response = $this->actingAs($this->user)
         ->patchJson("/api/bookings/{$booking->id}/cancel");

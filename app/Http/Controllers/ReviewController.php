@@ -34,7 +34,7 @@ class ReviewController extends Controller
             return response()->json(['message' => 'يمكنك التقييم فقط بعد اكتمال الحجز.'], 422);
         }
 
-        if ($booking->room->hotel_id !== $data['hotel_id']) {
+        if ($booking->hotel_id !== $data['hotel_id']) {
             return response()->json(['message' => 'الحجز لا ينتمي لهذا الفندق.'], 422);
         }
 
