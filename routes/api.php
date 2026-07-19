@@ -27,12 +27,14 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/users', [AuthController::class, 'index']);
     Route::patch('/users/{user}/role', [UserController::class, 'updateRole']);
 });
-//         hotel routes
+// hotel routes
 Route::prefix('hotels')->group(function () {
     Route::get('/', [HotelController::class, 'index']);
     Route::get('/{hotel}', [HotelController::class, 'show']);
     Route::get('/{hotel}/reviews', [ReviewController::class, 'index']);
     Route::get('/{hotel}/images', [HotelController::class, 'getImages']);
+    Route::get('/{hotel}/rooms', [RoomController::class, 'indexByHotel']);
+    Route::get('/{hotel}/room-types', [RoomController::class, 'roomTypes']);
 
     Route::middleware(['auth:sanctum', 'role:admin|manager'])->group(function () {
         Route::post('/', [HotelController::class, 'store']);
@@ -79,6 +81,8 @@ Route::prefix('rooms')->group(function () {
         Route::post('/', [RoomController::class, 'store']);
         Route::put('/{room}', [RoomController::class, 'update']);
         Route::delete('/{room}', [RoomController::class, 'destroy']);
+        Route::post('/{room}/images', [RoomController::class, 'uploadImage']);
+        Route::delete('/{room}/images/{mediaId}', [RoomController::class, 'deleteImage']);
     });
 });
 // review routes

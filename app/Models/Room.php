@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use App\Enums\RoomType;
 use App\Enums\RoomStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Room extends Model
+class Room extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
         'hotel_id',
@@ -22,8 +24,12 @@ class Room extends Model
     protected $casts = [
         'type' => RoomType::class,
         'status' => RoomStatus::class,
-
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('images');
+    }
 
     /*
     | Relationships
