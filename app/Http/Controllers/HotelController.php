@@ -14,21 +14,31 @@ class HotelController extends Controller
 {
     public function index(Request $request)
     {
-
-        $hotels = Hotel::when($request->name, fn($q) =>
-        $q->where(function ($query) use ($request) {
-            $query->where('name_ar', 'like', "%{$request->name}%")
-                ->orWhere('name_en', 'like', "%{$request->name}%");
-        }))
-            ->when($request->city_id, fn($q) =>
+        $hotels = Hotel::query()
+            ->when($request->filled('name'), function ($q) use ($request) {
+                $q->where(function ($query) use ($request) {
+                    $query->where('name_ar', 'like', "%{$request->name}%")
+                        ->orWhere('name_en', 'like', "%{$request->name}%")
+                        ->orWhereHas('city', function ($cityQuery) use ($request) {
+                            $cityQuery->where('name_ar', 'like', "%{$request->name}%")
+                                ->orWhere('name_en', 'like', "%{$request->name}%");
+                        });
+                });
+            })
+            ->when($request->filled('city_id'), fn($q) =>
             $q->where('city_id', $request->city_id))
-            ->when($request->star_rating, fn($q) =>
+            ->when($request->filled('star_rating'), fn($q) =>
             $q->where('star_rating', $request->star_rating))
-            ->latest()
+            ->withCount('bookings')
+            ->when($request->sort === 'popular', function ($q) {
+                $q->orderByDesc('bookings_count');
+            }, function ($q) {
+                $q->latest();
+            })
             ->paginate(10);
+
         return HotelResource::collection($hotels->load('user', 'city', 'services'));
     }
-
     public function show(Hotel $hotel)
     {
 

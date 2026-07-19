@@ -43,6 +43,9 @@ class RoomController extends Controller
         $data = $groups->map(function ($rooms) {
             $sample = $rooms->first();
 
+            // دور على أي غرفة من هالمجموعة عندها صورة، مش بس الأولى
+            $roomWithImage = $rooms->first(fn($room) => $room->getFirstMedia('images')->isNotEmpty());
+
             return [
                 'type' => [
                     'value' => $sample->type->value,
@@ -51,7 +54,9 @@ class RoomController extends Controller
                 'price_per_night' => $sample->price_per_night,
                 'capacity'        => $sample->capacity,
                 'available_count' => $rooms->count(),
-                'image_url'       => $sample->getFirstMediaUrl('images') ?: null,
+                'image_url'       => $roomWithImage
+                    ? $roomWithImage->getFirstMediaUrl('images')
+                    : null,
             ];
         })->values();
 
