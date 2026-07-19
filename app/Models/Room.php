@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use App\Enums\RoomType;
 use App\Enums\RoomStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Enums\RoomType;
 
 class Room extends Model
 {
