@@ -9,9 +9,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Room extends Model
 {
-        use HasFactory;
+    use HasFactory;
 
-     protected $fillable = [
+    protected $fillable = [
         'hotel_id',
         'room_number',
         'type',
@@ -19,7 +19,7 @@ class Room extends Model
         'price_per_night',
         'status',
     ];
-     protected $casts = [
+    protected $casts = [
         'type' => RoomType::class,
         'status' => RoomStatus::class,
 
@@ -34,7 +34,9 @@ class Room extends Model
         return $this->belongsTo(Hotel::class);
     }
     public function bookings()
-{
-    return $this->hasMany(Booking::class);
-}
+    {
+        return $this->belongsToMany(Booking::class, 'booking_room')
+            ->using(BookingRoom::class)
+            ->withTimestamps();
+    }
 }

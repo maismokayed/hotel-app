@@ -7,10 +7,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Booking extends Model
 {
-       use HasFactory;
-protected $fillable = [
+    use HasFactory;
+    protected $fillable = [
         'user_id',
-        'room_id',
+        'hotel_id',
         'coupon_id',
         'check_in_date',
         'check_out_date',
@@ -26,7 +26,7 @@ protected $fillable = [
         'check_in_date'  => 'datetime',
         'check_out_date' => 'datetime',
         'total_price'    => 'decimal:2',
-        'discount_amount'=> 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'final_price'    => 'decimal:2',
     ];
 
@@ -36,18 +36,24 @@ protected $fillable = [
         return $this->belongsTo(User::class);
     }
 
-    public function room()
+    public function coupon()
     {
-        return $this->belongsTo(Room::class);
+        return $this->belongsTo(Coupon::class);
     }
 
-    public function coupon()
-   {
-       return $this->belongsTo(Coupon::class);
-   }
+    public function review()
+    {
+        return $this->hasOne(Review::class);
+    }
+    public function hotel()
+    {
+        return $this->belongsTo(Hotel::class);
+    }
 
- public function review()
-  {
-      return $this->hasOne(Review::class);
- }
+    public function rooms()
+    {
+        return $this->belongsToMany(Room::class, 'booking_room')
+            ->using(BookingRoom::class)
+            ->withTimestamps();
+    }
 }

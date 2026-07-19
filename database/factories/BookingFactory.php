@@ -3,18 +3,14 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use App\Models\Room;
+use App\Models\Hotel;
 use App\Models\User;
+
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Booking>
  */
 class BookingFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         $checkIn  = $this->faker->dateTimeBetween('+1 days', '+10 days');
@@ -22,7 +18,7 @@ class BookingFactory extends Factory
 
         return [
             'user_id'          => User::factory(),
-            'room_id'          => Room::factory(),
+            'hotel_id'         => Hotel::factory(),
             'coupon_id'        => null,
             'check_in_date'    => $checkIn,
             'check_out_date'   => $checkOut,
