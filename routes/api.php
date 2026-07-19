@@ -12,18 +12,20 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\UserController;
 
-
+//Auth routes
 //Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
+    Route::delete('/profile', [AuthController::class, 'deleteAccount']);
 });
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/users', [AuthController::class, 'index']);
-    Route::delete('/profile', [AuthController::class, 'deleteAccount']);
+    Route::patch('/users/{user}/role', [UserController::class, 'updateRole']);
 });
 //         hotel routes
 Route::prefix('hotels')->group(function () {
