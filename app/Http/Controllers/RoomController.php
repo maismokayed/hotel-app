@@ -44,7 +44,7 @@ class RoomController extends Controller
             $sample = $rooms->first();
 
             // دور على أي غرفة من هالمجموعة عندها صورة، مش بس الأولى
-            $roomWithImage = $rooms->first(fn($room) => $room->getFirstMedia('images')->isNotEmpty());
+            $roomWithImage = $rooms->first(fn($room) => $room->getMedia('images')->isNotEmpty());
 
             return [
                 'type' => [
