@@ -37,7 +37,8 @@ class HotelController extends Controller
             })
             ->paginate(10);
 
-        return HotelResource::collection($hotels->load('user', 'city', 'services'));
+        $hotels->getCollection()->load('user', 'city', 'services');
+        return HotelResource::collection($hotels);
     }
     public function show(Hotel $hotel)
     {
