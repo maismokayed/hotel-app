@@ -53,7 +53,7 @@ class RoomController extends Controller
                 'price_per_night' => $sample->price_per_night,
                 'capacity'        => $sample->capacity,
                 'available_count' => $rooms->count(),
-                'image_url'       => $roomWithImage
+                'cover_image'     => $roomWithImage
                     ? $roomWithImage->getFirstMediaUrl('images')
                     : null,
             ];

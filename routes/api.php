@@ -62,8 +62,12 @@ Route::prefix('bookings')->middleware('auth:sanctum')->group(function () {
         Route::patch('/{booking}', [BookingController::class, 'update']);
     });
 });
+
 // coupon routes
-// coupon routes
+// coupon check (accessible to authenticated users, not just admin)
+Route::middleware('auth:sanctum')->get('/coupons/check', [CouponController::class, 'check']);
+
+// coupon routes (admin only)
 Route::prefix('coupons')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/', [CouponController::class, 'index']);
     Route::post('/', [CouponController::class, 'store']);
@@ -106,7 +110,6 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::post('/cities/{city}/image', [CityController::class, 'uploadImage']);
     Route::delete('/cities/{city}/image', [CityController::class, 'deleteImage']);
 });
-//Contact messages routes
 //Contact messages routes
 Route::post('/contact-us', [ContactMessageController::class, 'store']);
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
