@@ -81,8 +81,6 @@ Route::prefix('rooms')->group(function () {
         Route::post('/', [RoomController::class, 'store']);
         Route::put('/{room}', [RoomController::class, 'update']);
         Route::delete('/{room}', [RoomController::class, 'destroy']);
-        Route::post('/{room}/images', [RoomController::class, 'uploadImage']);
-        Route::delete('/{room}/images/{mediaId}', [RoomController::class, 'deleteImage']);
     });
 });
 // review routes

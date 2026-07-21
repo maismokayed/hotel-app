@@ -25,10 +25,9 @@ class Room extends Model implements HasMedia
         'type' => RoomType::class,
         'status' => RoomStatus::class,
     ];
-
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('images');
+        $this->addMediaCollection('images')->singleFile();
     }
 
     /*

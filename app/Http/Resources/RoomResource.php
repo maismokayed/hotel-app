@@ -23,11 +23,10 @@ class RoomResource extends JsonResource
             'capacity'        => $this->capacity,
             'price_per_night' => $this->price_per_night,
 
-            // صورة واحدة سريعة (متل cover_image بالفندق) لعرضها بالكارد/الليست
+
             'cover_image' => $this->getFirstMediaUrl('images') ?: null,
 
-            // كل صور الغرفة مع الـ id تبع كل وحدة، حتى الداشبورد يقدر
-            // يعرضهن ويستخدم الـ id مباشرة وقت الحذف (DELETE .../images/{id})
+
             'images' => $this->getMedia('images')->map(fn($media) => [
                 'id'  => $media->id,
                 'url' => $media->getUrl(),
