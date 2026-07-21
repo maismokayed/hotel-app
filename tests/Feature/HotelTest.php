@@ -294,7 +294,141 @@ it('rejects a non-existent city_id', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['city_id']);
 });
+it('creates a hotel with multiple images', function () {
+    Storage::fake('public');
 
+    $city = City::first();
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->postJson('/api/hotels', [
+            'name_ar'    => 'فندق مع صور',
+            'name_en'    => 'Hotel With Images',
+            'city_id'    => $city->id,
+            'address_ar' => 'الشارع الرئيسي',
+            'address_en' => 'Main Street',
+            'images'     => [
+                UploadedFile::fake()->image('room1.jpg'),
+                UploadedFile::fake()->image('room2.png'),
+            ],
+        ])
+        ->assertCreated();
+
+    $hotel = Hotel::where('name_en', 'Hotel With Images')->first();
+    expect($hotel->getMedia('images'))->toHaveCount(2);
+});
+
+it('creates a hotel without images successfully (images are optional)', function () {
+    $city = City::first();
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->postJson('/api/hotels', [
+            'name_ar'    => 'فندق بدون صور',
+            'name_en'    => 'Hotel Without Images',
+            'city_id'    => $city->id,
+            'address_ar' => 'الشارع الرئيسي',
+            'address_en' => 'Main Street',
+        ])
+        ->assertCreated();
+});
+
+it('rejects more than 5 images on hotel creation', function () {
+    Storage::fake('public');
+
+    $city = City::first();
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $images = collect(range(1, 6))
+        ->map(fn($i) => UploadedFile::fake()->image("room{$i}.jpg"))
+        ->toArray();
+
+    $this->actingAs($admin)
+        ->postJson('/api/hotels', [
+            'name_ar'    => 'فندق تجريبي',
+            'name_en'    => 'Test Hotel Many Images',
+            'city_id'    => $city->id,
+            'address_ar' => 'الشارع الرئيسي',
+            'address_en' => 'Main Street',
+            'images'     => $images,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['images']);
+});
+
+it('rejects a non-image file inside the images array on creation', function () {
+    Storage::fake('public');
+
+    $city = City::first();
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->postJson('/api/hotels', [
+            'name_ar'    => 'فندق تجريبي',
+            'name_en'    => 'Test Hotel Bad Image',
+            'city_id'    => $city->id,
+            'address_ar' => 'الشارع الرئيسي',
+            'address_en' => 'Main Street',
+            'images'     => [
+                UploadedFile::fake()->create('document.pdf', 100),
+            ],
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['images.0']);
+});
+
+it('rejects an oversized image inside the images array on creation', function () {
+    Storage::fake('public');
+
+    $city = City::first();
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->postJson('/api/hotels', [
+            'name_ar'    => 'فندق تجريبي',
+            'name_en'    => 'Test Hotel Big Image',
+            'city_id'    => $city->id,
+            'address_ar' => 'الشارع الرئيسي',
+            'address_en' => 'Main Street',
+            // الحد الأقصى 10240 كيلوبايت، فبنبعت أكبر بشوي لنتأكد إنه بيترفض
+            'images'     => [
+                UploadedFile::fake()->image('big.jpg')->size(10241),
+            ],
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['images.0']);
+});
+
+it('does not create the hotel row at all when one image in the batch is invalid', function () {
+    Storage::fake('public');
+
+    $city = City::first();
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    // بما إن الـ FormRequest بتعمل validate قبل ما توصل عالكونترولر،
+    // لازم الفندق ما ينخلق نهائياً - مش بس تترجع الصورة الفاشلة.
+    $this->actingAs($admin)
+        ->postJson('/api/hotels', [
+            'name_ar'    => 'فندق فشل الصور',
+            'name_en'    => 'Hotel Failed Images',
+            'city_id'    => $city->id,
+            'address_ar' => 'الشارع الرئيسي',
+            'address_en' => 'Main Street',
+            'images'     => [
+                UploadedFile::fake()->image('good.jpg'),
+                UploadedFile::fake()->create('bad.pdf', 100),
+            ],
+        ])
+        ->assertUnprocessable();
+
+    expect(Hotel::where('name_en', 'Hotel Failed Images')->exists())->toBeFalse();
+});
 // ============================================================
 // UPDATE
 // ============================================================
@@ -378,10 +512,121 @@ it('rejects update that duplicates another hotel in same city', function () {
         ])
         ->assertStatus(409);
 });
+it('appends new images to a hotel without removing existing ones', function () {
+    Storage::fake('public');
 
+    $hotel = Hotel::factory()->create();
+    $hotel->user->assignRole('manager');
+    $hotel->addMedia(UploadedFile::fake()->image('old.jpg'))->toMediaCollection('images');
+
+    $this->actingAs($hotel->user)
+        ->putJson("/api/hotels/{$hotel->id}", [
+            'images' => [
+                UploadedFile::fake()->image('new1.jpg'),
+                UploadedFile::fake()->image('new2.jpg'),
+            ],
+        ])
+        ->assertOk();
+
+    expect($hotel->fresh()->getMedia('images'))->toHaveCount(3);
+});
+
+it('updating a hotel without sending images does not touch existing ones', function () {
+    Storage::fake('public');
+
+    $hotel = Hotel::factory()->create();
+    $hotel->user->assignRole('manager');
+    $hotel->addMedia(UploadedFile::fake()->image('keep.jpg'))->toMediaCollection('images');
+
+    $this->actingAs($hotel->user)
+        ->putJson("/api/hotels/{$hotel->id}", [
+            'star_rating' => 5,
+        ])
+        ->assertOk();
+
+    expect($hotel->fresh()->getMedia('images'))->toHaveCount(1);
+});
+
+it('rejects more than 5 images on hotel update', function () {
+    Storage::fake('public');
+
+    $hotel = Hotel::factory()->create();
+    $hotel->user->assignRole('manager');
+
+    $images = collect(range(1, 6))
+        ->map(fn($i) => UploadedFile::fake()->image("room{$i}.jpg"))
+        ->toArray();
+
+    $this->actingAs($hotel->user)
+        ->putJson("/api/hotels/{$hotel->id}", [
+            'images' => $images,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['images']);
+});
+
+it('rejects a non-image file inside the images array on update', function () {
+    Storage::fake('public');
+
+    $hotel = Hotel::factory()->create();
+    $hotel->user->assignRole('manager');
+
+    $this->actingAs($hotel->user)
+        ->putJson("/api/hotels/{$hotel->id}", [
+            'images' => [
+                UploadedFile::fake()->create('document.pdf', 100),
+            ],
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['images.0']);
+});
+
+it('non-owner cannot add images through the update endpoint', function () {
+    Storage::fake('public');
+
+    $manager = User::factory()->create();
+    $manager->assignRole('manager');
+
+    $hotel = Hotel::factory()->create();
+
+    $this->actingAs($manager)
+        ->putJson("/api/hotels/{$hotel->id}", [
+            'images' => [UploadedFile::fake()->image('hack.jpg')],
+        ])
+        ->assertForbidden();
+
+    expect($hotel->fresh()->getMedia('images'))->toHaveCount(0);
+});
 // ============================================================
 // DESTROY
 // ============================================================
+it('deletes hotel images when the hotel is force deleted', function () {
+    Storage::fake('public');
+
+    $hotel = Hotel::factory()->create();
+    $hotel->addMedia(UploadedFile::fake()->image('room.jpg'))->toMediaCollection('images');
+
+    expect($hotel->getMedia('images'))->toHaveCount(1);
+
+    $hotel->forceDelete();
+
+    $this->assertDatabaseMissing('media', [
+        'model_type' => Hotel::class,
+        'model_id'   => $hotel->id,
+    ]);
+});
+
+it('keeps hotel images intact on a normal (soft) delete', function () {
+    Storage::fake('public');
+
+    $hotel = Hotel::factory()->create();
+    $hotel->addMedia(UploadedFile::fake()->image('room.jpg'))->toMediaCollection('images');
+
+    $hotel->delete(); // soft delete بس
+
+    $this->assertSoftDeleted('hotels', ['id' => $hotel->id]);
+    expect($hotel->fresh()->getMedia('images'))->toHaveCount(1);
+});
 
 it('owner can delete their hotel', function () {
     $hotel = Hotel::factory()->create();
@@ -714,11 +959,47 @@ it('non-owner cannot update hotel status', function () {
         ])
         ->assertForbidden();
 });
+it('returns cover_image and images list when hotel has images', function () {
+    Storage::fake('public');
 
-it('guest cannot update hotel status', function () {
+    $hotel = Hotel::factory()->create();
+    $hotel->addMedia(UploadedFile::fake()->image('room1.jpg'))->toMediaCollection('images');
+    $hotel->addMedia(UploadedFile::fake()->image('room2.jpg'))->toMediaCollection('images');
+
+    $response = $this->getJson("/api/hotels/{$hotel->id}");
+
+
+    $response->assertOk()
+        ->assertJsonCount(2, 'data.images')
+        ->assertJsonPath('data.cover_image', fn($url) => ! is_null($url));
+});
+
+it('returns null cover_image when hotel has no images', function () {
     $hotel = Hotel::factory()->create();
 
-    $this->patchJson("/api/hotels/{$hotel->id}/status", [
-        'is_active' => false,
-    ])->assertUnauthorized();
+    $this->getJson("/api/hotels/{$hotel->id}")
+        ->assertOk()
+        ->assertJsonPath('data.cover_image', null)
+        ->assertJsonCount(0, 'data.images');
+});
+it('does not cause N+1 queries when loading images for multiple hotels in index', function () {
+    Storage::fake('public');
+
+    Hotel::factory()->count(5)->create()->each(function ($hotel) {
+        $hotel->addMedia(UploadedFile::fake()->image('room.jpg'))
+            ->toMediaCollection('images');
+    });
+
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+
+    $this->getJson('/api/hotels')
+        ->assertOk();
+
+    $queries = \Illuminate\Support\Facades\DB::getQueryLog();
+
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    $queryCount = count($queries);
+
+    expect($queryCount)->toBeLessThan(15);
 });

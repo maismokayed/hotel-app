@@ -9,6 +9,7 @@ use App\Http\Resources\HotelResource;
 use App\Http\Requests\TransferHotelRequest;
 use Illuminate\Http\Request;
 use App\Http\Requests\UpdateHotelStatusRequest;
+use Illuminate\Support\Facades\DB;
 
 class HotelController extends Controller
 {
@@ -37,13 +38,15 @@ class HotelController extends Controller
             })
             ->paginate(10);
 
-        $hotels->getCollection()->load('user', 'city', 'services');
+        // Eager-load media collections too, to avoid N+1 queries when
+        // HotelResource calls getFirstMediaUrl()/getMedia() per hotel.
+        $hotels->getCollection()->load('user.roles', 'city.media', 'services', 'media');
         return HotelResource::collection($hotels);
     }
     public function show(Hotel $hotel)
     {
 
-        return new HotelResource($hotel->load('user', 'city', 'services'));
+        return new HotelResource($hotel->load('user', 'city', 'services', 'media'));
     }
 
     public function store(StoreHotelRequest $request)
@@ -61,24 +64,37 @@ class HotelController extends Controller
             ], 409);
         }
 
-        $hotel = new Hotel();
-        $hotel->name_ar = trim($data['name_ar']);
-        $hotel->name_en = trim($data['name_en']);
-        $hotel->description_ar = $data['description_ar'] ?? null;
-        $hotel->description_en = $data['description_en'] ?? null;
-        $hotel->address_ar = trim($data['address_ar']);
-        $hotel->address_en = trim($data['address_en']);
-        $hotel->city_id = $data['city_id'];
-        $hotel->phone = $data['phone'] ?? null;
-        $hotel->email = $data['email'] ?? null;
-        $hotel->star_rating = $data['star_rating'] ?? null;
-        $hotel->is_active = true;
-        $hotel->user_id = auth()->id();
-        $hotel->save();
+        // Wrapped in a transaction: if any image fails to attach,
+        // the hotel row itself is rolled back instead of being left
+        // in the database with a partial set of images.
+        $hotel = DB::transaction(function () use ($data, $request) {
+            $hotel = new Hotel();
+            $hotel->name_ar = trim($data['name_ar']);
+            $hotel->name_en = trim($data['name_en']);
+            $hotel->description_ar = $data['description_ar'] ?? null;
+            $hotel->description_en = $data['description_en'] ?? null;
+            $hotel->address_ar = trim($data['address_ar']);
+            $hotel->address_en = trim($data['address_en']);
+            $hotel->city_id = $data['city_id'];
+            $hotel->phone = $data['phone'] ?? null;
+            $hotel->email = $data['email'] ?? null;
+            $hotel->star_rating = $data['star_rating'] ?? null;
+            $hotel->is_active = true;
+            $hotel->user_id = auth()->id();
+            $hotel->save();
+
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $hotel->addMedia($image)->toMediaCollection('images');
+                }
+            }
+
+            return $hotel;
+        });
 
         return response()->json([
             'message' => 'Hotel created successfully',
-            'hotel' => new HotelResource($hotel->load('user', 'city'))
+            'hotel' => new HotelResource($hotel->load('user', 'city', 'media'))
         ], 201);
     }
 
@@ -103,26 +119,34 @@ class HotelController extends Controller
             ], 409);
         }
 
-        $hotel->update([
-            'name_ar' => trim($data['name_ar'] ?? $hotel->name_ar),
-            'name_en' => trim($data['name_en'] ?? $hotel->name_en),
+        DB::transaction(function () use ($data, $request, $hotel) {
+            $hotel->update([
+                'name_ar' => trim($data['name_ar'] ?? $hotel->name_ar),
+                'name_en' => trim($data['name_en'] ?? $hotel->name_en),
 
-            'description_ar' => $data['description_ar'] ?? $hotel->description_ar,
-            'description_en' => $data['description_en'] ?? $hotel->description_en,
+                'description_ar' => $data['description_ar'] ?? $hotel->description_ar,
+                'description_en' => $data['description_en'] ?? $hotel->description_en,
 
-            'city_id' => $data['city_id'] ?? $hotel->city_id,
+                'city_id' => $data['city_id'] ?? $hotel->city_id,
 
-            'address_ar' => trim($data['address_ar'] ?? $hotel->address_ar),
-            'address_en' => trim($data['address_en'] ?? $hotel->address_en),
+                'address_ar' => trim($data['address_ar'] ?? $hotel->address_ar),
+                'address_en' => trim($data['address_en'] ?? $hotel->address_en),
 
-            'phone' => $data['phone'] ?? $hotel->phone,
-            'email' => $data['email'] ?? $hotel->email,
-            'star_rating' => $data['star_rating'] ?? $hotel->star_rating,
-        ]);
+                'phone' => $data['phone'] ?? $hotel->phone,
+                'email' => $data['email'] ?? $hotel->email,
+                'star_rating' => $data['star_rating'] ?? $hotel->star_rating,
+            ]);
+
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $hotel->addMedia($image)->toMediaCollection('images');
+                }
+            }
+        });
 
         return response()->json([
             'message' => 'Hotel updated successfully',
-            'hotel' => new HotelResource($hotel->fresh()->load('user', 'city'))
+            'hotel' => new HotelResource($hotel->fresh()->load('user', 'city', 'media'))
         ]);
     }
 

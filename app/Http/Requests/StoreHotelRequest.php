@@ -37,6 +37,9 @@ class StoreHotelRequest extends FormRequest
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email',
             'star_rating' => 'nullable|integer|min:1|max:5',
+
+            'images' => 'nullable|array|max:5',
+            'images.*' => 'image|mimes:jpg,jpeg,png,jfif|max:10240',
         ];
     }
 }

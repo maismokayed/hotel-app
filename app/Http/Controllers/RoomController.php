@@ -75,6 +75,10 @@ class RoomController extends Controller
 
         $room = Room::create($data);
 
+        if ($request->hasFile('image')) {
+            $room->addMedia($request->file('image'))->toMediaCollection('images');
+        }
+
         return new RoomResource($room);
     }
 
@@ -84,6 +88,10 @@ class RoomController extends Controller
 
         $data = $request->validated();
         $room->update($data);
+
+        if ($request->hasFile('image')) {
+            $room->addMedia($request->file('image'))->toMediaCollection('images');
+        }
 
         return new RoomResource($room);
     }

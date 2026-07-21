@@ -53,6 +53,13 @@ class HotelResource extends JsonResource
             'star_rating' => $this->star_rating,
 
             'cover_image' => $this->getFirstMediaUrl('images') ?: null,
+            'images' => $this->getMedia('images')
+                ->map(fn($media) => [
+                    'id' => $media->id,
+                    'url' => $media->getUrl(),
+                ])
+                ->values()
+                ->all(),
             'is_active'   => (bool) $this->is_active,
             'services' => ServiceResource::collection($this->whenLoaded('services')),
 
