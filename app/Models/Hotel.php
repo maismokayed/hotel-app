@@ -38,10 +38,7 @@ class Hotel extends Model implements HasMedia
     {
         return $this->hasMany(Review::class);
     }
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection('images');
-    }
+
     public function city()
     {
         return $this->belongsTo(City::class);
@@ -57,5 +54,18 @@ class Hotel extends Model implements HasMedia
     public function bookings()
     {
         return $this->hasMany(Booking::class);
+    }
+    public function registerMediaCollections(): void
+    {
+
+        $this->addMediaCollection('images');
+    }
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::forceDeleted(function (Hotel $hotel) {
+            $hotel->clearMediaCollection('images');
+        });
     }
 }

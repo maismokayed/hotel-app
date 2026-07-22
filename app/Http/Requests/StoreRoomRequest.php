@@ -30,6 +30,7 @@ class StoreRoomRequest extends FormRequest
             'capacity' => 'required|integer|min:1|max:12',
             'price_per_night' => 'required|numeric|min:0',
             'status' => 'nullable|in:' . implode(',', array_column(RoomStatus::cases(), 'value')),
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,jfif|max:10240',
         ];
     }
 }

@@ -37,6 +37,9 @@ class UpdateHotelRequest extends FormRequest
             'email' => 'nullable|email',
             'star_rating' => 'nullable|integer|min:1|max:5',
             'is_active' => 'boolean',
+
+            'images' => 'nullable|array|max:5',
+            'images.*' => 'image|mimes:jpg,jpeg,png,jfif|max:10240',
         ];
     }
 }

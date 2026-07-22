@@ -30,6 +30,8 @@ class UpdateRoomRequest extends FormRequest
             'capacity' => 'sometimes|integer|min:1|max:10',
             'price_per_night' => 'sometimes|numeric|min:0',
             'status' => 'sometimes|in:' . implode(',', array_column(RoomStatus::cases(), 'value')),
+            'image' => 'sometimes|nullable|image|mimes:jpg,jpeg,png,jfif|max:10240',
+            'remove_image' => 'sometimes|nullable|boolean',
         ];
     }
 }

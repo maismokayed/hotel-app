@@ -43,7 +43,6 @@ class RoomController extends Controller
         $data = $groups->map(function ($rooms) {
             $sample = $rooms->first();
 
-            // دور على أي غرفة من هالمجموعة عندها صورة، مش بس الأولى
             $roomWithImage = $rooms->first(fn($room) => $room->getMedia('images')->isNotEmpty());
 
             return [
@@ -54,7 +53,7 @@ class RoomController extends Controller
                 'price_per_night' => $sample->price_per_night,
                 'capacity'        => $sample->capacity,
                 'available_count' => $rooms->count(),
-                'image_url'       => $roomWithImage
+                'cover_image'     => $roomWithImage
                     ? $roomWithImage->getFirstMediaUrl('images')
                     : null,
             ];
@@ -62,6 +61,7 @@ class RoomController extends Controller
 
         return response()->json(['data' => $data]);
     }
+
     public function store(StoreRoomRequest $request)
     {
         $data = $request->validated();
@@ -75,6 +75,10 @@ class RoomController extends Controller
 
         $room = Room::create($data);
 
+        if ($request->hasFile('image')) {
+            $room->addMedia($request->file('image'))->toMediaCollection('images');
+        }
+
         return new RoomResource($room);
     }
 
@@ -83,7 +87,15 @@ class RoomController extends Controller
         $this->authorizeHotelAccess($room->hotel);
 
         $data = $request->validated();
+        unset($data['remove_image']);
+
         $room->update($data);
+
+        if ($request->hasFile('image')) {
+            $room->addMedia($request->file('image'))->toMediaCollection('images');
+        } elseif ($request->boolean('remove_image')) {
+            $room->clearMediaCollection('images');
+        }
 
         return new RoomResource($room);
     }
@@ -97,38 +109,6 @@ class RoomController extends Controller
         return response()->json([
             'message' => 'Room deleted successfully'
         ]);
-    }
-
-    public function uploadImage(Request $request, Room $room)
-    {
-        $this->authorizeHotelAccess($room->hotel);
-
-        $request->validate([
-            'image' => 'required|image|mimes:jpg,jpeg,png,jfif|max:10240',
-        ]);
-
-        $media = $room->addMedia($request->file('image'))
-            ->toMediaCollection('images');
-
-        return response()->json([
-            'id'  => $media->id,
-            'url' => $media->getUrl(),
-        ]);
-    }
-
-    public function deleteImage(Room $room, $mediaId)
-    {
-        $this->authorizeHotelAccess($room->hotel);
-
-        $media = $room->getMedia('images')->find($mediaId);
-
-        if (!$media) {
-            return response()->json(['message' => 'Image not found'], 404);
-        }
-
-        $media->delete();
-
-        return response()->json(['message' => 'Image deleted successfully']);
     }
 
     private function authorizeHotelAccess(Hotel $hotel)

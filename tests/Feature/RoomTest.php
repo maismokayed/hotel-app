@@ -537,171 +537,6 @@ it('guest cannot delete a room', function () {
     $this->deleteJson("/api/rooms/{$room->id}")
         ->assertUnauthorized();
 });
-
-// ============================================================
-// IMAGES
-// ============================================================
-
-it('rejects image upload without a file', function () {
-    $hotel = Hotel::factory()->create();
-    $hotel->user->assignRole('manager');
-    $room = Room::factory()->create(['hotel_id' => $hotel->id]);
-
-    $this->actingAs($hotel->user)
-        ->postJson("/api/rooms/{$room->id}/images", [])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors(['image']);
-});
-
-it('owner can upload a room image', function () {
-    Storage::fake('public');
-
-    $hotel = Hotel::factory()->create();
-    $hotel->user->assignRole('manager');
-    $room = Room::factory()->create(['hotel_id' => $hotel->id]);
-
-    $this->actingAs($hotel->user)
-        ->postJson("/api/rooms/{$room->id}/images", [
-            'image' => UploadedFile::fake()->image('room.jpg'),
-        ])
-        ->assertOk()
-        ->assertJsonStructure(['id', 'url']);
-
-    expect($room->fresh()->getMedia('images'))->toHaveCount(1);
-});
-
-it('allows uploading multiple images to the same room (documents current behavior)', function () {
-    Storage::fake('public');
-
-    $hotel = Hotel::factory()->create();
-    $hotel->user->assignRole('manager');
-    $room = Room::factory()->create(['hotel_id' => $hotel->id]);
-
-    $this->actingAs($hotel->user)
-        ->postJson("/api/rooms/{$room->id}/images", ['image' => UploadedFile::fake()->image('a.jpg')]);
-    $this->actingAs($hotel->user)
-        ->postJson("/api/rooms/{$room->id}/images", ['image' => UploadedFile::fake()->image('b.jpg')]);
-
-    // هاد التست بيوثق السلوك الحالي (تراكم صور بدون استبدال) — مش بالضرورة السلوك المرغوب
-    // لو بدك تسمحي بصورة وحيدة بس للغرفة، لازم تضيفي singleFile() بالـ registerMediaCollections
-    expect($room->fresh()->getMedia('images'))->toHaveCount(2);
-});
-
-it('rejects a non-image file on room image upload', function () {
-    Storage::fake('public');
-
-    $hotel = Hotel::factory()->create();
-    $hotel->user->assignRole('manager');
-    $room = Room::factory()->create(['hotel_id' => $hotel->id]);
-
-    $this->actingAs($hotel->user)
-        ->postJson("/api/rooms/{$room->id}/images", [
-            'image' => UploadedFile::fake()->create('document.pdf', 100),
-        ])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors(['image']);
-});
-
-it('manager cannot upload an image for a room they do not own', function () {
-    Storage::fake('public');
-
-    $manager = User::factory()->create();
-    $manager->assignRole('manager');
-
-    $room = Room::factory()->create();
-
-    $this->actingAs($manager)
-        ->postJson("/api/rooms/{$room->id}/images", [
-            'image' => UploadedFile::fake()->image('room.jpg'),
-        ])
-        ->assertForbidden();
-});
-
-it('guest cannot upload a room image', function () {
-    $room = Room::factory()->create();
-
-    $this->postJson("/api/rooms/{$room->id}/images", [
-        'image' => UploadedFile::fake()->image('room.jpg'),
-    ])->assertUnauthorized();
-});
-
-it('owner can delete a room image', function () {
-    Storage::fake('public');
-
-    $hotel = Hotel::factory()->create();
-    $hotel->user->assignRole('manager');
-    $room = Room::factory()->create(['hotel_id' => $hotel->id]);
-
-    $media = $room->addMedia(UploadedFile::fake()->image('room.jpg'))
-        ->toMediaCollection('images');
-
-    $this->actingAs($hotel->user)
-        ->deleteJson("/api/rooms/{$room->id}/images/{$media->id}")
-        ->assertOk();
-
-    expect($room->fresh()->getMedia('images'))->toHaveCount(0);
-});
-
-it('returns 404 when deleting a non-existent room image', function () {
-    $hotel = Hotel::factory()->create();
-    $hotel->user->assignRole('manager');
-    $room = Room::factory()->create(['hotel_id' => $hotel->id]);
-
-    $this->actingAs($hotel->user)
-        ->deleteJson("/api/rooms/{$room->id}/images/999999")
-        ->assertNotFound();
-});
-
-it('returns 404 when deleting media that belongs to a different room', function () {
-    Storage::fake('public');
-
-    $hotel = Hotel::factory()->create();
-    $hotel->user->assignRole('manager');
-    $roomA = Room::factory()->create(['hotel_id' => $hotel->id]);
-    $roomB = Room::factory()->create(['hotel_id' => $hotel->id]);
-
-    $media = $roomA->addMedia(UploadedFile::fake()->image('a.jpg'))
-        ->toMediaCollection('images');
-
-    // محاولة حذف صورة roomA من خلال roomB — لازم يفشل (404) حتى لو نفس المالك
-    $this->actingAs($hotel->user)
-        ->deleteJson("/api/rooms/{$roomB->id}/images/{$media->id}")
-        ->assertNotFound();
-
-    expect($roomA->fresh()->getMedia('images'))->toHaveCount(1);
-});
-
-it('manager cannot delete an image for a room they do not own', function () {
-    Storage::fake('public');
-
-    $manager = User::factory()->create();
-    $manager->assignRole('manager');
-
-    $room = Room::factory()->create();
-    $media = $room->addMedia(UploadedFile::fake()->image('room.jpg'))
-        ->toMediaCollection('images');
-
-    $this->actingAs($manager)
-        ->deleteJson("/api/rooms/{$room->id}/images/{$media->id}")
-        ->assertForbidden();
-});
-
-it('shows uploaded images with id and url via RoomResource', function () {
-    Storage::fake('public');
-
-    $hotel = Hotel::factory()->create();
-    $hotel->user->assignRole('manager');
-    $room = Room::factory()->create(['hotel_id' => $hotel->id]);
-
-    $room->addMedia(UploadedFile::fake()->image('room1.jpg'))->toMediaCollection('images');
-    $room->addMedia(UploadedFile::fake()->image('room2.jpg'))->toMediaCollection('images');
-
-    $this->getJson("/api/rooms/{$room->id}")
-        ->assertOk()
-        ->assertJsonCount(2, 'data.images')
-        ->assertJsonStructure(['data' => ['images' => [['id', 'url']]]]);
-});
-
 // ============================================================
 // حالات "بيانات فاسدة" (Data integrity) — مش من خلال الـ API
 // ============================================================
@@ -726,4 +561,183 @@ it('documents that a corrupted type value in the database breaks the show endpoi
     // (الحل المقترح: إضافة try/catch أو fallback بالـ RoomType enum cast)
     $this->getJson("/api/rooms/{$roomId}")
         ->assertStatus(500);
+});
+// ============================================================
+// IMAGES (via update endpoint only — no separate image routes anymore)
+// ============================================================
+
+it('creates a room with an image when provided', function () {
+    Storage::fake('public');
+
+    $hotel = Hotel::factory()->create();
+    $hotel->user->assignRole('manager');
+
+    $response = $this->actingAs($hotel->user)
+        ->post('/api/rooms', [
+            'hotel_id'        => $hotel->id,
+            'room_number'     => '201',
+            'type'            => 'single',
+            'capacity'        => 1,
+            'price_per_night' => 150,
+            'image'           => UploadedFile::fake()->image('room.jpg'),
+        ])
+        ->assertCreated();
+
+    $room = Room::find($response->json('data.id'));
+    expect($room->getMedia('images'))->toHaveCount(1);
+});
+
+it('creates a room without an image when none is provided', function () {
+    $hotel = Hotel::factory()->create();
+    $hotel->user->assignRole('manager');
+
+    $response = $this->actingAs($hotel->user)
+        ->postJson('/api/rooms', [
+            'hotel_id'        => $hotel->id,
+            'room_number'     => '202',
+            'type'            => 'single',
+            'capacity'        => 1,
+            'price_per_night' => 150,
+        ])
+        ->assertCreated();
+
+    $room = Room::find($response->json('data.id'));
+    expect($room->getMedia('images'))->toHaveCount(0);
+});
+
+it('replaces the existing image when a new one is uploaded on update', function () {
+    Storage::fake('public');
+
+    $hotel = Hotel::factory()->create();
+    $hotel->user->assignRole('manager');
+    $room = Room::factory()->create(['hotel_id' => $hotel->id]);
+
+    $room->addMedia(UploadedFile::fake()->image('old.jpg'))->toMediaCollection('images');
+    $oldMediaId = $room->fresh()->getFirstMedia('images')->id;
+
+    $this->actingAs($hotel->user)
+        ->post("/api/rooms/{$room->id}?_method=PUT", [
+            'image' => UploadedFile::fake()->image('new.jpg'),
+        ])
+        ->assertOk();
+
+    $room->refresh();
+    expect($room->getMedia('images'))->toHaveCount(1);
+    expect($room->getFirstMedia('images')->id)->not->toBe($oldMediaId);
+});
+
+it('removes the image when remove_image is true and no new image is sent', function () {
+    Storage::fake('public');
+
+    $hotel = Hotel::factory()->create();
+    $hotel->user->assignRole('manager');
+    $room = Room::factory()->create(['hotel_id' => $hotel->id]);
+
+    $room->addMedia(UploadedFile::fake()->image('room.jpg'))->toMediaCollection('images');
+
+    $this->actingAs($hotel->user)
+        ->putJson("/api/rooms/{$room->id}", [
+            'remove_image' => true,
+        ])
+        ->assertOk();
+
+    expect($room->fresh()->getMedia('images'))->toHaveCount(0);
+});
+
+it('keeps the existing image when neither image nor remove_image is sent', function () {
+    Storage::fake('public');
+
+    $hotel = Hotel::factory()->create();
+    $hotel->user->assignRole('manager');
+    $room = Room::factory()->create(['hotel_id' => $hotel->id]);
+
+    $room->addMedia(UploadedFile::fake()->image('room.jpg'))->toMediaCollection('images');
+    $originalMediaId = $room->fresh()->getFirstMedia('images')->id;
+
+    $this->actingAs($hotel->user)
+        ->putJson("/api/rooms/{$room->id}", [
+            'price_per_night' => 500,
+        ])
+        ->assertOk();
+
+    $room->refresh();
+    expect($room->getMedia('images'))->toHaveCount(1);
+    expect($room->getFirstMedia('images')->id)->toBe($originalMediaId);
+});
+
+it('new image wins when both image and remove_image are sent together', function () {
+    Storage::fake('public');
+
+    $hotel = Hotel::factory()->create();
+    $hotel->user->assignRole('manager');
+    $room = Room::factory()->create(['hotel_id' => $hotel->id]);
+
+    $room->addMedia(UploadedFile::fake()->image('old.jpg'))->toMediaCollection('images');
+
+    $this->actingAs($hotel->user)
+        ->post("/api/rooms/{$room->id}?_method=PUT", [
+            'image'        => UploadedFile::fake()->image('new.jpg'),
+            'remove_image' => true,
+        ])
+        ->assertOk();
+
+    $room->refresh();
+    expect($room->getMedia('images'))->toHaveCount(1);
+    expect($room->getFirstMediaUrl('images'))->toContain('new');
+});
+it('rejects a non-image file when updating with an image', function () {
+    $hotel = Hotel::factory()->create();
+    $hotel->user->assignRole('manager');
+
+    $room = Room::factory()->create([
+        'hotel_id' => $hotel->id
+    ]);
+
+    $this->actingAs($hotel->user)
+        ->postJson("/api/rooms/{$room->id}?_method=PUT", [
+            'image' => UploadedFile::fake()->create('document.pdf', 100),
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['image']);
+});
+it('manager cannot update image for a room they do not own', function () {
+    Storage::fake('public');
+
+    $manager = User::factory()->create();
+    $manager->assignRole('manager');
+    $room = Room::factory()->create();
+
+    $room->addMedia(UploadedFile::fake()->image('room.jpg'))->toMediaCollection('images');
+
+    $this->actingAs($manager)
+        ->post("/api/rooms/{$room->id}?_method=PUT", [
+            'image' => UploadedFile::fake()->image('hack.jpg'),
+        ])
+        ->assertForbidden();
+
+    expect($room->fresh()->getMedia('images'))->toHaveCount(1);
+});
+
+it('guest cannot update a room image', function () {
+    $room = Room::factory()->create();
+
+    $this->postJson("/api/rooms/{$room->id}?_method=PUT", [
+        'image' => UploadedFile::fake()->image('room.jpg'),
+    ])
+        ->assertUnauthorized();
+});
+
+it('shows cover_image and images array with id and url via RoomResource', function () {
+    Storage::fake('public');
+
+    $hotel = Hotel::factory()->create();
+    $hotel->user->assignRole('manager');
+    $room = Room::factory()->create(['hotel_id' => $hotel->id]);
+
+    $room->addMedia(UploadedFile::fake()->image('room.jpg'))->toMediaCollection('images');
+
+    $this->getJson("/api/rooms/{$room->id}")
+        ->assertOk()
+        ->assertJsonCount(1, 'data.images')
+        ->assertJsonStructure(['data' => ['cover_image', 'images' => [['id', 'url']]]]);
 });
