@@ -25,7 +25,14 @@ class CouponController extends Controller
     public function store(StoreCouponRequest $request)
     {
         $coupon = Coupon::create($request->validated());
-        return (new CouponResource($coupon))->response()->setStatusCode(201);
+        return response()->json([
+            'success' => true,
+            'message' => [
+                'ar' => 'تم إنشاء الكوبون بنجاح.',
+                'en' => 'Coupon created successfully.',
+            ],
+            'data' => new CouponResource($coupon),
+        ], 201);
     }
 
     public function update(UpdateCouponRequest $request, Coupon $coupon)
@@ -37,7 +44,14 @@ class CouponController extends Controller
     public function destroy(Coupon $coupon)
     {
         $coupon->delete();
-        return response()->json(['message' => 'تم حذف الكوبون بنجاح.']);
+
+        return response()->json([
+            'success' => true,
+            'message' => [
+                'ar' => 'تم حذف الكوبون بنجاح.',
+                'en' => 'Coupon deleted successfully.',
+            ],
+        ], 200);
     }
 
     public function check(Request $request)
@@ -50,10 +64,13 @@ class CouponController extends Controller
 
         if (!$coupon) {
             return response()->json([
-                'valid'   => false,
+                'success' => false,
                 'message' => [
                     'ar' => 'الكوبون غير موجود',
                     'en' => 'Coupon not found',
+                ],
+                'data' => [
+                    'valid' => false,
                 ],
             ], 404);
         }
@@ -82,22 +99,26 @@ class CouponController extends Controller
             }
 
             return response()->json([
-                'valid'   => false,
+                'success' => false,
                 'message' => $reason,
-            ]);
+                'data' => [
+                    'valid' => false,
+                ],
+            ], 422);
         }
 
         return response()->json([
-            'valid'   => true,
+            'success' => true,
             'message' => [
                 'ar' => 'الكوبون صالح للاستخدام',
                 'en' => 'Coupon is valid',
             ],
             'data' => [
+                'valid'          => true,
                 'code'           => $coupon->code,
                 'discount_type'  => $coupon->discount_type,
                 'discount_value' => $coupon->discount_value,
             ],
-        ]);
+        ], 200);
     }
 }

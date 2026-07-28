@@ -14,7 +14,6 @@ class CityController extends Controller
         return CityResource::collection(City::with('media')->get());
     }
 
-
     public function uploadImage(Request $request, City $city)
     {
         $request->validate([
@@ -27,16 +26,27 @@ class CityController extends Controller
             ->toMediaCollection('images');
 
         return response()->json([
-            'message' => 'Image uploaded successfully',
-            'image_url' => $city->getFirstMediaUrl('images')
-        ]);
+            'success' => true,
+            'message' => [
+                'ar' => 'تم رفع الصورة بنجاح.',
+                'en' => 'Image uploaded successfully.',
+            ],
+            'data' => [
+                'image_url' => $city->getFirstMediaUrl('images'),
+            ],
+        ], 200);
     }
+
     public function deleteImage(City $city): JsonResponse
     {
         $city->clearMediaCollection('images');
 
         return response()->json([
-            'message' => 'Image deleted successfully'
-        ]);
+            'success' => true,
+            'message' => [
+                'ar' => 'تم حذف الصورة بنجاح.',
+                'en' => 'Image deleted successfully.',
+            ],
+        ], 200);
     }
 }

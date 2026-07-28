@@ -9,6 +9,7 @@ use App\Http\Requests\StoreRoomRequest;
 use App\Http\Requests\UpdateRoomRequest;
 use App\Http\Resources\RoomResource;
 use App\Enums\RoomStatus;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class RoomController extends Controller
 {
@@ -59,7 +60,10 @@ class RoomController extends Controller
             ];
         })->values();
 
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
     }
 
     public function store(StoreRoomRequest $request)
@@ -107,8 +111,12 @@ class RoomController extends Controller
         $room->delete();
 
         return response()->json([
-            'message' => 'Room deleted successfully'
-        ]);
+            'success' => true,
+            'message' => [
+                'ar' => 'تم حذف الغرفة بنجاح.',
+                'en' => 'Room deleted successfully.',
+            ],
+        ], 200);
     }
 
     private function authorizeHotelAccess(Hotel $hotel)
@@ -122,7 +130,15 @@ class RoomController extends Controller
                 !$user->hasRole('admin')
             )
         ) {
-            abort(403, 'Unauthorized');
+            throw new HttpResponseException(
+                response()->json([
+                    'success' => false,
+                    'message' => [
+                        'ar' => 'غير مصرح لك بهذا الإجراء.',
+                        'en' => 'You are not authorized to perform this action.',
+                    ],
+                ], 403)
+            );
         }
     }
 }

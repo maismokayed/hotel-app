@@ -9,41 +9,62 @@ class UserController extends Controller
 {
     public function updateRole(UpdateUserRoleRequest $request, User $user)
     {
-        // 1. ما تسمحيش للـ admin يغيّر دوره هو نفسه
+        // 1. لا تسمح للـ admin بتغيير دوره هو نفسه
         if ($request->user()->id === $user->id) {
             return response()->json([
-                'message' => 'لا يمكنك تغيير دورك الخاص.',
+                'success' => false,
+                'message' => [
+                    'ar' => 'لا يمكنك تغيير دورك الخاص.',
+                    'en' => 'You cannot change your own role.',
+                ],
             ], 422);
         }
 
-        // 2. ما تسمحيش تنزيل آخر admin بالنظام
+        // 2. لا تسمح بتنزيل آخر admin في النظام
         if ($request->role !== 'admin' && $user->hasRole('admin')) {
             $adminCount = User::role('admin')->count();
+
             if ($adminCount <= 1) {
                 return response()->json([
-                    'message' => 'لا يمكن تنزيل دور آخر مسؤول (admin) في النظام.',
+                    'success' => false,
+                    'message' => [
+                        'ar' => 'لا يمكن تغيير دور آخر مسؤول (admin) في النظام.',
+                        'en' => 'You cannot remove the role of the last admin in the system.',
+                    ],
                 ], 422);
             }
         }
 
-        // 3. ما تسمحيش تنزيل manager عندو فنادق مرتبطة فيه
+        // 3. لا تسمح بتغيير manager لديه فنادق مرتبطة
         if ($request->role !== 'manager' && $user->hasRole('manager') && $user->hotels()->exists()) {
             return response()->json([
-                'message' => 'لا يمكن تغيير دور هذا المستخدم لأن لديه فنادق مرتبطة به. يرجى نقل ملكية الفنادق أولاً.',
+                'success' => false,
+                'message' => [
+                    'ar' => 'لا يمكن تغيير دور هذا المستخدم لأن لديه فنادق مرتبطة به. يرجى نقل ملكية الفنادق أولاً.',
+                    'en' => 'Cannot change this user role because they have associated hotels. Please transfer hotel ownership first.',
+                ],
             ], 422);
         }
 
-        // 4. ما تنفذيش عملية فاضية لو نفس الدور أصلاً
+        // 4. نفس الدور موجود مسبقاً
         if ($user->hasRole($request->role)) {
             return response()->json([
-                'message' => 'المستخدم لديه هذا الدور مسبقاً.',
+                'success' => false,
+                'message' => [
+                    'ar' => 'المستخدم لديه هذا الدور مسبقاً.',
+                    'en' => 'The user already has this role.',
+                ],
             ], 422);
         }
 
         $user->syncRoles([$request->role]);
 
         return response()->json([
-            'message' => 'تم تحديث دور المستخدم بنجاح.',
+            'success' => true,
+            'message' => [
+                'ar' => 'تم تحديث دور المستخدم بنجاح.',
+                'en' => 'User role updated successfully.',
+            ],
             'role' => $request->role,
         ]);
     }

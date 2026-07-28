@@ -175,7 +175,7 @@ it('returns empty data when no rooms are available at all', function () {
         ->assertJsonCount(0, 'data');
 });
 
-it('returns null image_url when no room in the type group has an image', function () {
+it('returns null cover_image when no room in the type group has an image', function () {
     $hotel = Hotel::factory()->create();
     Room::factory()->create([
         'hotel_id' => $hotel->id,
@@ -186,11 +186,11 @@ it('returns null image_url when no room in the type group has an image', functio
     $response = $this->getJson("/api/hotels/{$hotel->id}/room-types")
         ->assertOk();
 
-    expect(collect($response->json('data'))->firstWhere('type.value', 'single')['image_url'])
+    expect(collect($response->json('data'))->firstWhere('type.value', 'single')['cover_image'])
         ->toBeNull();
 });
 
-it('returns an image_url from any room in the group that has one', function () {
+it('returns a cover_image from any room in the group that has one', function () {
     Storage::fake('public');
 
     $hotel = Hotel::factory()->create();
@@ -203,7 +203,7 @@ it('returns an image_url from any room in the group that has one', function () {
     $response = $this->getJson("/api/hotels/{$hotel->id}/room-types")
         ->assertOk();
 
-    expect(collect($response->json('data'))->firstWhere('type.value', 'single')['image_url'])
+    expect(collect($response->json('data'))->firstWhere('type.value', 'single')['cover_image'])
         ->not->toBeNull();
 });
 

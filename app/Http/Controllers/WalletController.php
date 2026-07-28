@@ -11,16 +11,22 @@ use App\Http\Resources\WalletTransactionResource;
 
 class WalletController extends Controller
 {
- public function show(Request $request)
-{
-    $wallet = $request->user()->wallet;
+    public function show(Request $request)
+    {
+        $wallet = $request->user()->wallet;
 
-    if (!$wallet) {
-        return response()->json(['message' => 'المحفظة غير موجودة.'], 404);
+        if (!$wallet) {
+            return response()->json([
+                'success' => false,
+                'message' => [
+                    'ar' => 'المحفظة غير موجودة.',
+                    'en' => 'Wallet not found.',
+                ],
+            ], 404);
+        }
+
+        return new WalletResource($wallet);
     }
-
-    return new WalletResource($wallet);
-}
 
     public function deposit(WalletDepositRequest $request)
     {
@@ -47,15 +53,22 @@ class WalletController extends Controller
         return new WalletResource($wallet->fresh());
     }
 
-  public function transactions(Request $request)
-{
-    $wallet = $request->user()->wallet;
+    public function transactions(Request $request)
+    {
+        $wallet = $request->user()->wallet;
 
-    if (!$wallet) {
-        return response()->json(['message' => 'المحفظة غير موجودة.'], 404);
+        if (!$wallet) {
+            return response()->json([
+                'success' => false,
+                'message' => [
+                    'ar' => 'المحفظة غير موجودة.',
+                    'en' => 'Wallet not found.',
+                ],
+            ], 404);
+        }
+
+        $transactions = $wallet->transactions()->latest()->get();
+
+        return WalletTransactionResource::collection($transactions);
     }
-
-    $transactions = $wallet->transactions()->latest()->get();
-    return WalletTransactionResource::collection($transactions);
-}
 }

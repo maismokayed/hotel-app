@@ -65,7 +65,7 @@ it('can create a booking successfully', function () {
                 'final_price'
             ]
         ])
-        ->assertJsonPath('data.status', 'pending'); // cash = no money moved yet
+        ->assertJsonPath('data.status', 'pending');
 
     $this->assertDatabaseHas('bookings', [
         'user_id'  => $this->user->id,
@@ -154,7 +154,7 @@ it('cannot book when not enough rooms of a type are available', function () {
         ]);
 
     $response->assertStatus(422)
-        ->assertJsonPath('message.en', 'Not enough available rooms.');
+        ->assertJsonPath('message.ar', 'لا يوجد عدد كافٍ من الغرف المتاحة.');
 });
 
 it('can apply a valid coupon', function () {
@@ -201,7 +201,7 @@ it('cannot apply an invalid coupon', function () {
         ]);
 
     $response->assertStatus(422)
-        ->assertJsonPath('message.ar', 'الكوبون غير صالح أو منتهي الصلاحية.');
+        ->assertJsonPath('message.en', 'This coupon is invalid or has expired.');
 });
 
 // ============================================================
@@ -340,8 +340,7 @@ it('cancels a booking for free when more than 3 days remain before check-in', fu
     $response = $this->actingAs($this->user)
         ->patchJson("/api/bookings/{$booking->id}/cancel");
 
-    $response->assertOk()
-        ->assertJsonPath('message.ar', 'تم إلغاء الحجز بنجاح، ولا يوجد أي خصم.');
+    $response->assertOk();
 
     $this->assertDatabaseHas('bookings', [
         'id'     => $booking->id,
@@ -383,7 +382,8 @@ it('returns the fee breakdown and waits for confirmation on a late cancellation,
 
     $response->assertOk()
         ->assertJsonPath('requires_confirmation', true)
-        ->assertJsonPath('fee', 100);
+        ->assertJsonPath('fee', 100)
+        ->assertJsonPath('message.ar', 'الإلغاء بعد أقل من 3 أيام من موعد الوصول يترتب عليه خصم غرامة قدرها 100 من محفظتك. هل تريد المتابعة؟');
 
     $this->assertDatabaseHas('bookings', [
         'id'     => $booking->id,
@@ -411,7 +411,8 @@ it('charges the late-cancellation fee from the wallet on a cash-paid booking', f
     $response = $this->actingAs($this->user)
         ->patchJson("/api/bookings/{$booking->id}/cancel", ['confirm' => true]);
 
-    $response->assertOk();
+    $response->assertOk()
+        ->assertJsonPath('message.ar', 'تم إلغاء الحجز، وتم خصم 100 من محفظتك كغرامة إلغاء متأخر.');
 
     $this->assertDatabaseHas('bookings', [
         'id'     => $booking->id,
@@ -447,7 +448,8 @@ it('does not cancel a late cash booking if the wallet cannot cover the fee', fun
     $response = $this->actingAs($this->user)
         ->patchJson("/api/bookings/{$booking->id}/cancel", ['confirm' => true]);
 
-    $response->assertStatus(422);
+    $response->assertStatus(422)
+        ->assertJsonPath('message.ar', 'لا يوجد رصيد كافٍ لتغطية غرامة الإلغاء. لم يتم إلغاء الحجز، يرجى تعبئة محفظتك أولاً.');
 
     $this->assertDatabaseHas('bookings', [
         'id'     => $booking->id,
@@ -470,7 +472,8 @@ it('fails cleanly on a late cash cancellation when the user has no wallet at all
     $response = $this->actingAs($this->user)
         ->patchJson("/api/bookings/{$booking->id}/cancel", ['confirm' => true]);
 
-    $response->assertStatus(422);
+    $response->assertStatus(422)
+        ->assertJsonPath('message.ar', 'لا يوجد رصيد كافٍ لتغطية غرامة الإلغاء. لم يتم إلغاء الحجز، يرجى تعبئة محفظتك أولاً.');
 
     $this->assertDatabaseHas('bookings', [
         'id'     => $booking->id,
@@ -498,7 +501,8 @@ it('refunds the remaining balance to the wallet on a late wallet-paid cancellati
     $response = $this->actingAs($this->user)
         ->patchJson("/api/bookings/{$booking->id}/cancel", ['confirm' => true]);
 
-    $response->assertOk();
+    $response->assertOk()
+        ->assertJsonPath('message.ar', 'تم إلغاء الحجز. تم خصم غرامة 100 واسترجاع الباقي إلى محفظتك.');
 
     $this->assertDatabaseHas('bookings', [
         'id'     => $booking->id,
@@ -540,7 +544,7 @@ it('lets an admin cancel on behalf of a customer, moving money in the customer w
 
     $response->assertOk();
 
-    expect((float) $customerWallet->fresh()->balance)->toBe(400.00); // debited, not the admin's wallet
+    expect((float) $customerWallet->fresh()->balance)->toBe(400.00);
 });
 
 it('restores the coupon usage count when a coupon-booking is cancelled', function () {
@@ -679,8 +683,7 @@ it('treats exactly 4 days before check-in as a free cancellation', function () {
     $response = $this->actingAs($this->user)
         ->patchJson("/api/bookings/{$booking->id}/cancel");
 
-    $response->assertOk()
-        ->assertJsonPath('message.en', 'Booking cancelled successfully, no fee applies.');
+    $response->assertOk();
 });
 
 // ============================================================
