@@ -22,7 +22,11 @@ class UpdateBookingRequest extends FormRequest
     public function rules(): array
     {
         return [
-             'status' => 'required|in:pending,confirmed,cancelled,completed',
+            // 'cancelled' is intentionally excluded here — cancelling a
+            // booking must always go through BookingController::cancel(),
+            // which handles the refund/fee logic. Allowing it here would
+            // let a booking be cancelled with no money ever moving.
+            'status' => 'required|in:pending,confirmed,completed',
         ];
     }
 }
