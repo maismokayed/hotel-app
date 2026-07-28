@@ -15,6 +15,16 @@ class HotelController extends Controller
 {
     public function index(Request $request)
     {
+        $validated = $request->validate([
+            'name'        => 'nullable|string|max:100',
+            'city_id'     => 'nullable|integer|exists:cities,id',
+            'star_rating' => 'nullable|integer|min:1|max:5',
+            'sort'        => 'nullable|string|in:popular,latest',
+            'per_page'    => 'nullable|integer|min:1|max:50',
+        ]);
+
+        $perPage = $validated['per_page'] ?? 10;
+
         $hotels = Hotel::query()
             ->when($request->filled('name'), function ($q) use ($request) {
                 $q->where(function ($query) use ($request) {
@@ -36,7 +46,7 @@ class HotelController extends Controller
             }, function ($q) {
                 $q->latest();
             })
-            ->paginate(10);
+            ->paginate($perPage);
 
         // Eager-load media collections too, to avoid N+1 queries when
         // HotelResource calls getFirstMediaUrl()/getMedia() per hotel.
