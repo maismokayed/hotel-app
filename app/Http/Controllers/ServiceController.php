@@ -49,11 +49,16 @@ class ServiceController extends Controller
 
         return new ServiceResource($service);
     }
-
     public function destroy(Service $service)
     {
         $service->delete();
 
-        return response()->json(['message' => 'تم حذف الخدمة بنجاح']);
+        return response()->json([
+            'success' => true,
+            'message' => [
+                'ar' => 'تم حذف الخدمة بنجاح.',
+                'en' => 'Service deleted successfully.',
+            ],
+        ], 200);
     }
 }

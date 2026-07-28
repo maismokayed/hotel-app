@@ -12,7 +12,11 @@ class ContactMessageController extends Controller
         $contactMessage = ContactMessage::create($request->validated());
 
         return response()->json([
-            'message' => 'تم إرسال رسالتك بنجاح',
+            'success' => true,
+            'message' => [
+                'ar' => 'تم إرسال رسالتك بنجاح',
+                'en' => 'Your message has been sent successfully',
+            ],
             'data' => $contactMessage,
         ], 201);
     }
@@ -22,9 +26,13 @@ class ContactMessageController extends Controller
         $contactMessages = ContactMessage::latest()->paginate(15);
 
         return response()->json([
-            'message' => 'تم جلب رسائل التواصل بنجاح',
+            'success' => true,
+            'message' => [
+                'ar' => 'تم جلب رسائل التواصل بنجاح',
+                'en' => 'Contact messages fetched successfully',
+            ],
             'data' => $contactMessages,
-        ]);
+        ], 200);
     }
 
     public function update(ContactMessage $contactMessage)
@@ -33,8 +41,12 @@ class ContactMessageController extends Controller
         $contactMessage->save();
 
         return response()->json([
-            'message' => 'تم تحديث حالة الرسالة بنجاح',
+            'success' => true,
+            'message' => [
+                'ar' => 'تم تحديث حالة الرسالة بنجاح',
+                'en' => 'Message status updated successfully',
+            ],
             'data' => $contactMessage,
-        ]);
+        ], 200);
     }
 }

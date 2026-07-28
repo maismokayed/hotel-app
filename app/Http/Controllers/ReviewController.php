@@ -27,19 +27,43 @@ class ReviewController extends Controller
         $booking = Booking::findOrFail($data['booking_id']);
 
         if ($booking->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'غير مصرح لك بهذا الإجراء.'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => [
+                    'ar' => 'غير مصرح لك بهذا الإجراء.',
+                    'en' => 'You are not authorized to perform this action.',
+                ],
+            ], 403);
         }
 
         if ($booking->status !== 'completed') {
-            return response()->json(['message' => 'يمكنك التقييم فقط بعد اكتمال الحجز.'], 422);
+            return response()->json([
+                'success' => false,
+                'message' => [
+                    'ar' => 'يمكنك إضافة تقييم فقط بعد اكتمال الحجز.',
+                    'en' => 'You can only submit a review after the booking is completed.',
+                ],
+            ], 422);
         }
 
         if ($booking->hotel_id !== $data['hotel_id']) {
-            return response()->json(['message' => 'الحجز لا ينتمي لهذا الفندق.'], 422);
+            return response()->json([
+                'success' => false,
+                'message' => [
+                    'ar' => 'الحجز لا ينتمي لهذا الفندق.',
+                    'en' => 'This booking does not belong to the selected hotel.',
+                ],
+            ], 422);
         }
 
         if (Review::where('booking_id', $data['booking_id'])->exists()) {
-            return response()->json(['message' => 'لقد قمت بتقييم هذا الحجز مسبقاً.'], 422);
+            return response()->json([
+                'success' => false,
+                'message' => [
+                    'ar' => 'لقد قمت بتقييم هذا الحجز مسبقًا.',
+                    'en' => 'You have already reviewed this booking.',
+                ],
+            ], 422);
         }
 
         $review = Review::create([
@@ -47,7 +71,16 @@ class ReviewController extends Controller
             'user_id'     => $request->user()->id,
             'review_date' => now()->toDateString(),
         ]);
-        return (new ReviewResource($review->load('user')))->response()->setStatusCode(201);
+        return response()->json([
+            'success' => true,
+            'message' => [
+                'ar' => 'تمت إضافة التقييم بنجاح.',
+                'en' => 'Review submitted successfully.',
+            ],
+            'data' => [
+                'review' => new ReviewResource($review->load('user')),
+            ],
+        ], 201);
     }
 
     public function destroy(Review $review, Request $request)
@@ -56,14 +89,22 @@ class ReviewController extends Controller
 
         if (! $user->hasRole('admin')) {
             return response()->json([
-                'message' => 'غير مصرح لك بهذا الإجراء.'
+                'success' => false,
+                'message' => [
+                    'ar' => 'غير مصرح لك بهذا الإجراء.',
+                    'en' => 'You are not authorized to perform this action.',
+                ],
             ], 403);
         }
 
         $review->delete();
 
         return response()->json([
-            'message' => 'تم حذف التقييم بنجاح.'
+            'success' => true,
+            'message' => [
+                'ar' => 'تم حذف التقييم بنجاح.',
+                'en' => 'Review deleted successfully.',
+            ],
         ]);
     }
 }

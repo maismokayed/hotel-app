@@ -38,7 +38,14 @@ class BookingController extends Controller
 
         $bookings = $query->latest()->get();
 
-        return BookingResource::collection($bookings);
+        return response()->json([
+            'success' => true,
+            'message' => [
+                'ar' => 'تم جلب الحجوزات بنجاح',
+                'en' => 'Bookings fetched successfully',
+            ],
+            'data' => BookingResource::collection($bookings),
+        ], 200);
     }
 
     public function show(Booking $booking, Request $request)
@@ -53,14 +60,22 @@ class BookingController extends Controller
 
         if (! $isOwner && ! $isAdmin && ! $isManager) {
             return response()->json([
+                'success' => false,
                 'message' => [
-                    'ar' => 'غير مصرح لك.',
+                    'ar' => 'غير مصرح لك ببدء هذا الإجراء.',
                     'en' => 'You are not authorized to view this booking.',
                 ],
             ], 403);
         }
 
-        return new BookingResource($booking);
+        return response()->json([
+            'success' => true,
+            'message' => [
+                'ar' => 'تم جلب تفاصيل الحجز بنجاح',
+                'en' => 'Booking details fetched successfully',
+            ],
+            'data' => new BookingResource($booking),
+        ], 200);
     }
 
     public function store(StoreBookingRequest $request)
@@ -108,7 +123,7 @@ class BookingController extends Controller
                     }
 
                     foreach ($availableRooms as $room) {
-                        $selectedRoomIds[] = $room;
+                        $selectedRoomIds[] = $room->id;
                     }
                 }
 
@@ -116,7 +131,7 @@ class BookingController extends Controller
                 $checkOut = now()->parse($data['check_out_date']);
                 $nights   = $checkIn->diffInDays($checkOut);
 
-                $totalPrice = collect($selectedRoomIds)
+                $totalPrice = Room::whereIn('id', $selectedRoomIds)->get()
                     ->sum(fn($room) => $nights * $room->price_per_night);
 
                 $discountAmount = 0;
@@ -157,18 +172,14 @@ class BookingController extends Controller
                     $wallet->decrement('balance', $finalPrice);
 
                     WalletTransaction::create([
-                        'wallet_id'         => $wallet->id,
-                        'user_id'           => $request->user()->id,
-                        'amount'            => $finalPrice,
-                        'transaction_type'  => 'debit',
-                        'transaction_date'  => now(),
+                        'wallet_id'        => $wallet->id,
+                        'user_id'          => $request->user()->id,
+                        'amount'           => $finalPrice,
+                        'transaction_type' => 'debit',
+                        'transaction_date' => now(),
                     ]);
                 }
 
-                // Wallet payments are settled in full right here (see the
-                // wallet debit block above), so the booking is confirmed
-                // immediately. Cash bookings have no money moved yet, so
-                // they stay pending until the guest actually pays/arrives.
                 $status = $data['payment_method'] === 'wallet' ? 'confirmed' : 'pending';
 
                 $booking = Booking::create([
@@ -185,7 +196,7 @@ class BookingController extends Controller
                     'payment_method'   => $data['payment_method'],
                 ]);
 
-                $booking->rooms()->attach(collect($selectedRoomIds)->pluck('id'));
+                $booking->rooms()->attach($selectedRoomIds);
 
                 if ($coupon) {
                     $coupon->increment('used_count');
@@ -193,24 +204,29 @@ class BookingController extends Controller
 
                 return $booking;
             });
+
+            return response()->json([
+                'success' => true,
+                'message' => [
+                    'ar' => 'تم إنشاء الحجز بنجاح',
+                    'en' => 'Booking created successfully',
+                ],
+                'data' => new BookingResource($booking->load(['hotel', 'rooms', 'user'])),
+            ], 201);
         } catch (BookingException $e) {
             return response()->json([
+                'success' => false,
                 'message' => $e->messages(),
             ], 422);
         } catch (Exception $e) {
             return response()->json([
+                'success' => false,
                 'message' => [
                     'ar' => $e->getMessage(),
                     'en' => $e->getMessage(),
                 ],
             ], 422);
         }
-
-        return (new BookingResource(
-            $booking->load(['hotel', 'rooms', 'user'])
-        ))
-            ->response()
-            ->setStatusCode(201);
     }
 
     public function update(UpdateBookingRequest $request, Booking $booking)
@@ -219,6 +235,7 @@ class BookingController extends Controller
 
         if (! $user->hasRole('admin') && $booking->hotel?->user_id !== $user->id) {
             return response()->json([
+                'success' => false,
                 'message' => [
                     'ar' => 'غير مصرح لك بتعديل هذا الحجز.',
                     'en' => 'You are not authorized to update this booking.',
@@ -227,7 +244,15 @@ class BookingController extends Controller
         }
 
         $booking->update($request->validated());
-        return new BookingResource($booking->load(['hotel', 'rooms', 'user']));
+
+        return response()->json([
+            'success' => true,
+            'message' => [
+                'ar' => 'تم تحديث الحجز بنجاح',
+                'en' => 'Booking updated successfully',
+            ],
+            'data' => new BookingResource($booking->load(['hotel', 'rooms', 'user'])),
+        ], 200);
     }
 
     public function cancel(Booking $booking, Request $request)
@@ -236,6 +261,7 @@ class BookingController extends Controller
 
         if ($booking->user_id !== $user->id && ! $user->hasRole('admin')) {
             return response()->json([
+                'success' => false,
                 'message' => [
                     'ar' => 'غير مصرح لك بهذا الإجراء.',
                     'en' => 'You are not authorized to perform this action.',
@@ -245,6 +271,7 @@ class BookingController extends Controller
 
         if (! in_array($booking->status, ['pending', 'confirmed'])) {
             return response()->json([
+                'success' => false,
                 'message' => [
                     'ar' => 'لا يمكن إلغاء هذا الحجز.',
                     'en' => 'This booking cannot be cancelled.',
@@ -252,9 +279,7 @@ class BookingController extends Controller
             ], 422);
         }
 
-        // --- Work out whether we're inside the 3-day penalty window ---
         $today = now()->startOfDay();
-
         $checkInDate = $booking->check_in_date->copy()->startOfDay();
         $checkOutDate = $booking->check_out_date->copy()->startOfDay();
 
@@ -262,17 +287,14 @@ class BookingController extends Controller
 
         $daysUntilCheckIn = $today->diffInDays($checkInDate);
         if ($checkInDate->lt($today)) {
-            $daysUntilCheckIn = -$daysUntilCheckIn; // check-in date already passed
+            $daysUntilCheckIn = -$daysUntilCheckIn;
         }
 
         $isLateCancellation = $daysUntilCheckIn <= 3;
 
-        // --- Free cancellation: more than 3 days left, no confirmation needed ---
         if (! $isLateCancellation) {
             try {
                 DB::transaction(function () use ($booking) {
-                    // Re-fetch and lock so two simultaneous cancel requests
-                    // for the same booking can't both succeed.
                     $locked = Booking::where('id', $booking->id)->lockForUpdate()->first();
 
                     if (! in_array($locked->status, ['pending', 'confirmed'])) {
@@ -291,26 +313,29 @@ class BookingController extends Controller
                     $locked->update(['status' => 'cancelled']);
                 });
             } catch (BookingException $e) {
-                return response()->json(['message' => $e->messages()], 422);
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->messages()
+                ], 422);
             }
 
             return response()->json([
+                'success' => true,
                 'message' => [
                     'ar' => 'تم إلغاء الحجز بنجاح، ولا يوجد أي خصم.',
                     'en' => 'Booking cancelled successfully, no fee applies.',
                 ],
-            ]);
+            ], 200);
         }
 
-        // Fee = price of one night (proportional share of what was actually paid).
         $fee = round($booking->final_price / $nights, 2);
 
-        // --- Step 1: no confirmation yet, just show what will happen ---
         if (! $request->boolean('confirm')) {
             if ($booking->payment_method === 'wallet') {
                 $refund = max(0, $booking->final_price - $fee);
 
                 return response()->json([
+                    'success' => true,
                     'requires_confirmation' => true,
                     'fee'                   => $fee,
                     'refund_amount'         => $refund,
@@ -318,24 +343,22 @@ class BookingController extends Controller
                         'ar' => "الإلغاء بعد أقل من 3 أيام من موعد الوصول يترتب عليه غرامة قدرها {$fee}. سيتم استرجاع {$refund} إلى محفظتك. هل تريد المتابعة؟",
                         'en' => "Cancelling less than 3 days before check-in incurs a fee of {$fee}. {$refund} will be refunded to your wallet. Do you want to continue?",
                     ],
-                ]);
+                ], 200);
             }
 
             return response()->json([
+                'success' => true,
                 'requires_confirmation' => true,
                 'fee'                   => $fee,
                 'message' => [
                     'ar' => "الإلغاء بعد أقل من 3 أيام من موعد الوصول يترتب عليه خصم غرامة قدرها {$fee} من محفظتك. هل تريد المتابعة؟",
                     'en' => "Cancelling less than 3 days before check-in incurs a fee of {$fee}, which will be deducted from your wallet. Do you want to continue?",
                 ],
-            ]);
+            ], 200);
         }
 
-        // --- Step 2: confirmed — lock the booking + wallet, move the money, then cancel ---
         try {
             DB::transaction(function () use ($booking, $fee) {
-                // Re-fetch and lock so two simultaneous confirmations
-                // (double-click, retry) can't both go through.
                 $locked = Booking::where('id', $booking->id)->lockForUpdate()->first();
 
                 if (! in_array($locked->status, ['pending', 'confirmed'])) {
@@ -345,9 +368,6 @@ class BookingController extends Controller
                     );
                 }
 
-                // The booking's owner, NOT whoever is calling this endpoint —
-                // an admin can cancel on a customer's behalf, and the money
-                // must always move in and out of the customer's own wallet.
                 $owner  = $locked->user;
                 $wallet = Wallet::where('user_id', $owner->id)->lockForUpdate()->first();
 
@@ -391,10 +411,14 @@ class BookingController extends Controller
                 $locked->update(['status' => 'cancelled']);
             });
         } catch (BookingException $e) {
-            return response()->json(['message' => $e->messages()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => $e->messages()
+            ], 422);
         }
 
         return response()->json([
+            'success' => true,
             'message' => $booking->payment_method === 'wallet'
                 ? [
                     'ar' => "تم إلغاء الحجز. تم خصم غرامة {$fee} واسترجاع الباقي إلى محفظتك.",
@@ -404,15 +428,9 @@ class BookingController extends Controller
                     'ar' => "تم إلغاء الحجز، وتم خصم {$fee} من محفظتك كغرامة إلغاء متأخر.",
                     'en' => "Booking cancelled, and {$fee} was deducted from your wallet as a late-cancellation fee.",
                 ],
-        ]);
+        ], 200);
     }
 
-    /**
-     * Flip any 'confirmed' booking whose check_out_date has already passed
-     * to 'completed'. Runs on every visit to the bookings list so the
-     * status stays fresh without needing a terminal command or a server
-     * cron job.
-     */
     private function completeExpiredBookings(): void
     {
         Booking::where('status', 'confirmed')

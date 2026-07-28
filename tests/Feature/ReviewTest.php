@@ -81,9 +81,11 @@ it('user can create a review for completed booking', function () {
         ->assertStatus(201)
         ->assertJsonStructure([
             'data' => [
-                'id',
-                'comment',
-                'rating',
+                'review' => [
+                    'id',
+                    'comment',
+                    'rating',
+                ]
             ]
         ]);
 
@@ -117,7 +119,10 @@ it('user cannot review a pending booking', function () {
     $response
         ->assertStatus(422)
         ->assertJson([
-            'message' => 'يمكنك التقييم فقط بعد اكتمال الحجز.'
+            'message' => [
+                'ar' => 'يمكنك إضافة تقييم فقط بعد اكتمال الحجز.',
+                'en' => 'You can only submit a review after the booking is completed.',
+            ]
         ]);
 });
 
@@ -143,7 +148,10 @@ it('user cannot review the same booking twice', function () {
     $response
         ->assertStatus(422)
         ->assertJson([
-            'message' => 'لقد قمت بتقييم هذا الحجز مسبقاً.'
+            'message' => [
+                'ar' => 'لقد قمت بتقييم هذا الحجز مسبقًا.',
+                'en' => 'You have already reviewed this booking.',
+            ]
         ]);
 });
 
@@ -194,7 +202,10 @@ it('admin can delete a review', function () {
     $response
         ->assertOk()
         ->assertJson([
-            'message' => 'تم حذف التقييم بنجاح.'
+            'message' => [
+                'ar' => 'تم حذف التقييم بنجاح.',
+                'en' => 'Review deleted successfully.',
+            ]
         ]);
 
 

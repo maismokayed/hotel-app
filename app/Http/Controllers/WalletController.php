@@ -17,7 +17,17 @@ class WalletController extends Controller
         $wallet = $request->user()->wallet;
 
         if (!$wallet) {
+<<<<<<< HEAD
             return response()->json(['message' => 'المحفظة غير موجودة.'], 404);
+=======
+            return response()->json([
+                'success' => false,
+                'message' => [
+                    'ar' => 'المحفظة غير موجودة.',
+                    'en' => 'Wallet not found.',
+                ],
+            ], 404);
+>>>>>>> mais
         }
 
         return new WalletResource($wallet);
@@ -48,7 +58,17 @@ class WalletController extends Controller
         $wallet = $request->user()->wallet;
 
         if (!$wallet) {
+<<<<<<< HEAD
             return response()->json(['message' => 'المحفظة غير موجودة.'], 404);
+=======
+            return response()->json([
+                'success' => false,
+                'message' => [
+                    'ar' => 'المحفظة غير موجودة.',
+                    'en' => 'Wallet not found.',
+                ],
+            ], 404);
+>>>>>>> mais
         }
 
         $transactions = $wallet->transactions()->latest()->get();

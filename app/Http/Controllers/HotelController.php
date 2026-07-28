@@ -10,6 +10,7 @@ use App\Http\Requests\TransferHotelRequest;
 use Illuminate\Http\Request;
 use App\Http\Requests\UpdateHotelStatusRequest;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class HotelController extends Controller
 {
@@ -69,8 +70,14 @@ class HotelController extends Controller
 
         if ($similarHotel) {
             return response()->json([
-                'message' => 'Hotel already exists in this city',
-                'existing_hotel' => new HotelResource($similarHotel->load('user', 'city'))
+                'success' => false,
+                'message' => [
+                    'ar' => 'يوجد فندق بنفس الاسم في هذه المدينة.',
+                    'en' => 'Hotel already exists in this city.',
+                ],
+                'data' => [
+                    'existing_hotel' => new HotelResource($similarHotel->load('user', 'city')),
+                ],
             ], 409);
         }
 
@@ -103,8 +110,14 @@ class HotelController extends Controller
         });
 
         return response()->json([
-            'message' => 'Hotel created successfully',
-            'hotel' => new HotelResource($hotel->load('user', 'city', 'media'))
+            'success' => true,
+            'message' => [
+                'ar' => 'تم إنشاء الفندق بنجاح.',
+                'en' => 'Hotel created successfully.',
+            ],
+            'data' => [
+                'hotel' => new HotelResource($hotel->load('user', 'city', 'media')),
+            ],
         ], 201);
     }
 
@@ -124,8 +137,14 @@ class HotelController extends Controller
 
         if ($similarHotel) {
             return response()->json([
-                'message' => 'Another hotel with same name already exists in this city',
-                'existing_hotel' => new HotelResource($similarHotel->load('user', 'city'))
+                'success' => false,
+                'message' => [
+                    'ar' => 'يوجد فندق آخر بنفس الاسم في هذه المدينة.',
+                    'en' => 'Another hotel with the same name already exists in this city.',
+                ],
+                'data' => [
+                    'existing_hotel' => new HotelResource($similarHotel->load('user', 'city')),
+                ],
             ], 409);
         }
 
@@ -155,8 +174,14 @@ class HotelController extends Controller
         });
 
         return response()->json([
-            'message' => 'Hotel updated successfully',
-            'hotel' => new HotelResource($hotel->fresh()->load('user', 'city', 'media'))
+            'success' => true,
+            'message' => [
+                'ar' => 'تم تحديث الفندق بنجاح.',
+                'en' => 'Hotel updated successfully.',
+            ],
+            'data' => [
+                'hotel' => new HotelResource($hotel->fresh()->load('user', 'city', 'media')),
+            ],
         ]);
     }
 
@@ -166,7 +191,11 @@ class HotelController extends Controller
         $hotel->delete();
 
         return response()->json([
-            'message' => 'Hotel deleted successfully'
+            'success' => true,
+            'message' => [
+                'ar' => 'تم حذف الفندق بنجاح.',
+                'en' => 'Hotel deleted successfully.',
+            ],
         ]);
     }
 
@@ -181,7 +210,15 @@ class HotelController extends Controller
                 !$user->hasRole('admin')
             )
         ) {
-            abort(403, 'Unauthorized');
+            throw new HttpResponseException(
+                response()->json([
+                    'success' => false,
+                    'message' => [
+                        'ar' => 'غير مصرح لك بهذا الإجراء.',
+                        'en' => 'You are not authorized to perform this action.',
+                    ],
+                ], 403)
+            );
         }
     }
 
@@ -190,20 +227,36 @@ class HotelController extends Controller
         $newOwner = \App\Models\User::find($request->user_id);
 
         if (!$newOwner) {
-            return response()->json(['message' => 'المستخدم غير موجود.'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => [
+                    'ar' => 'المستخدم غير موجود.',
+                    'en' => 'User not found.',
+                ],
+            ], 404);
         }
 
         if (!$newOwner->hasRole('manager') && !$newOwner->hasRole('admin')) {
             return response()->json([
-                'message' => 'User must be a manager or admin'
+                'success' => false,
+                'message' => [
+                    'ar' => 'يجب أن يكون المستخدم مديرًا أو مسؤولًا.',
+                    'en' => 'User must be a manager or admin.',
+                ],
             ], 422);
         }
 
         $hotel->update(['user_id' => $request->user_id]);
 
         return response()->json([
-            'message' => 'Hotel transferred successfully',
-            'hotel' => new HotelResource($hotel->fresh()->load('user', 'city'))
+            'success' => true,
+            'message' => [
+                'ar' => 'تم نقل ملكية الفندق بنجاح.',
+                'en' => 'Hotel transferred successfully.',
+            ],
+            'data' => [
+                'hotel' => new HotelResource($hotel->fresh()->load('user', 'city')),
+            ],
         ]);
     }
 
@@ -219,9 +272,16 @@ class HotelController extends Controller
             ->toMediaCollection('images');
 
         return response()->json([
-            'id'  => $media->id,
-            'url' => $media->getUrl(),
-        ]);
+            'success' => true,
+            'message' => [
+                'ar' => 'تم رفع الصورة بنجاح.',
+                'en' => 'Image uploaded successfully.',
+            ],
+            'data' => [
+                'id' => $media->id,
+                'url' => $media->getUrl(),
+            ],
+        ], 201);
     }
 
     public function getImages(Hotel $hotel)
@@ -247,14 +307,22 @@ class HotelController extends Controller
 
         if (!$media) {
             return response()->json([
-                'message' => 'Image not found',
+                'success' => false,
+                'message' => [
+                    'ar' => 'الصورة غير موجودة.',
+                    'en' => 'Image not found.',
+                ],
             ], 404);
         }
 
         $media->delete();
 
         return response()->json([
-            'message' => 'Image deleted successfully',
+            'success' => true,
+            'message' => [
+                'ar' => 'تم حذف الصورة بنجاح.',
+                'en' => 'Image deleted successfully.',
+            ],
         ]);
     }
     public function syncServices(Request $request, Hotel $hotel)
@@ -279,10 +347,16 @@ class HotelController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Hotel status updated successfully',
-            'hotel' => new HotelResource(
-                $hotel->fresh()->load('user', 'city', 'services')
-            ),
+            'success' => true,
+            'message' => [
+                'ar' => 'تم تحديث حالة الفندق بنجاح.',
+                'en' => 'Hotel status updated successfully.',
+            ],
+            'data' => [
+                'hotel' => new HotelResource(
+                    $hotel->fresh()->load('user', 'city', 'services')
+                ),
+            ],
         ]);
     }
 }

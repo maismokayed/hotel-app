@@ -17,10 +17,19 @@ class AuthController extends Controller
     public function index()
     {
         $users = User::with('roles')->get();
+
         return response()->json([
-            'users' => UserResource::collection($users)
-        ]);
+            'success' => true,
+            'message' => [
+                'ar' => 'تم جلب المستخدمين بنجاح',
+                'en' => 'Users fetched successfully',
+            ],
+            'data' => [
+                'users' => UserResource::collection($users)
+            ]
+        ], 200);
     }
+
     public function register(RegisterRequest $request)
     {
         $data = $request->validated();
@@ -46,9 +55,16 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'user'  => new UserResource($user),
-            'token' => $token,
-        ], 200);
+            'success' => true,
+            'message' => [
+                'ar' => 'تم إنشاء الحساب بنجاح',
+                'en' => 'Account created successfully',
+            ],
+            'data' => [
+                'user'  => new UserResource($user),
+                'token' => $token,
+            ]
+        ], 201);
     }
 
     public function login(LoginRequest $request)
@@ -59,16 +75,27 @@ class AuthController extends Controller
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
             return response()->json([
-                'message' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+                'success' => false,
+                'message' => [
+                    'ar' => 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+                    'en' => 'Invalid email or password.',
+                ],
             ], 401);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'user'  => new UserResource($user),
-            'token' => $token,
-        ]);
+            'success' => true,
+            'message' => [
+                'ar' => 'تم تسجيل الدخول بنجاح',
+                'en' => 'Logged in successfully',
+            ],
+            'data' => [
+                'user'  => new UserResource($user),
+                'token' => $token,
+            ]
+        ], 200);
     }
 
     public function logout(Request $request)
@@ -76,16 +103,28 @@ class AuthController extends Controller
         $request->user()->tokens()->delete();
 
         return response()->json([
-            'message' => 'تم تسجيل الخروج بنجاح.',
-        ]);
+            'success' => true,
+            'message' => [
+                'ar' => 'تم تسجيل الخروج بنجاح.',
+                'en' => 'Logged out successfully.',
+            ],
+        ], 200);
     }
 
     public function profile(Request $request)
     {
         return response()->json([
-            'user' => new UserResource($request->user()->load('roles'))
-        ]);
+            'success' => true,
+            'message' => [
+                'ar' => 'تم جلب البيانات الشخصية بنجاح',
+                'en' => 'Profile fetched successfully',
+            ],
+            'data' => [
+                'user' => new UserResource($request->user()->load('roles'))
+            ]
+        ], 200);
     }
+
     public function deleteAccount(Request $request)
     {
         $user = $request->user();
@@ -96,25 +135,41 @@ class AuthController extends Controller
 
         if (!Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'كلمة المرور غير صحيحة.',
+                'success' => false,
+                'message' => [
+                    'ar' => 'كلمة المرور غير صحيحة.',
+                    'en' => 'Incorrect password.',
+                ],
             ], 422);
         }
 
         if ($user->hotels()->exists()) {
             return response()->json([
-                'message' => 'لا يمكن حذف الحساب لوجود فنادق مرتبطة به. يرجى حذف الفنادق أو نقل ملكيتها إلى مدير آخر أولاً.',
+                'success' => false,
+                'message' => [
+                    'ar' => 'لا يمكن حذف الحساب لوجود فنادق مرتبطة به. يرجى حذف الفنادق أو نقل ملكيتها إلى مدير آخر أولاً.',
+                    'en' => 'Cannot delete account because there are associated hotels. Please delete or transfer ownership first.',
+                ],
             ], 422);
         }
 
         if ($user->bookings()->exists()) {
             return response()->json([
-                'message' => 'لا يمكن حذف الحساب لوجود حجوزات مرتبطة به.',
+                'success' => false,
+                'message' => [
+                    'ar' => 'لا يمكن حذف الحساب لوجود حجوزات مرتبطة به.',
+                    'en' => 'Cannot delete account because there are active bookings associated with it.',
+                ],
             ], 422);
         }
 
         if ($user->wallet && $user->wallet->balance > 0) {
             return response()->json([
-                'message' => 'لا يمكن حذف الحساب لوجود رصيد في المحفظة. يرجى التواصل مع الإدارة لتسوية الرصيد أولاً.',
+                'success' => false,
+                'message' => [
+                    'ar' => 'لا يمكن حذف الحساب لوجود رصيد في المحفظة. يرجى التواصل مع الإدارة لتسوية الرصيد أولاً.',
+                    'en' => 'Cannot delete account because there is a remaining wallet balance. Please contact support.',
+                ],
             ], 422);
         }
 
@@ -122,7 +177,11 @@ class AuthController extends Controller
         $user->delete();
 
         return response()->json([
-            'message' => 'تم حذف الحساب بنجاح.',
-        ]);
+            'success' => true,
+            'message' => [
+                'ar' => 'تم حذف الحساب بنجاح.',
+                'en' => 'Account deleted successfully.',
+            ],
+        ], 200);
     }
 }
