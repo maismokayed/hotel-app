@@ -761,3 +761,33 @@ it('rounds the late-cancellation fee to 2 decimals when it does not divide evenl
     $response->assertOk()
         ->assertJsonPath('fee', 33.33);
 });
+it('refunds the full amount to the wallet on a free (non-late) cancellation', function () {
+    $wallet = Wallet::factory()->create([
+        'user_id' => $this->user->id,
+        'balance' => 100,
+    ]);
+
+    $booking = Booking::factory()->create([
+        'user_id'        => $this->user->id,
+        'hotel_id'       => $this->hotel->id,
+        'status'         => 'confirmed',
+        'payment_method' => 'wallet',
+        'check_in_date'  => now()->addDays(10),
+        'check_out_date' => now()->addDays(13),
+        'final_price'    => 300,
+    ]);
+    $booking->rooms()->attach($this->room->id);
+
+    $response = $this->actingAs($this->user)
+        ->patchJson("/api/bookings/{$booking->id}/cancel");
+
+    $response->assertOk();
+
+    expect((float) $wallet->fresh()->balance)->toBe(400.00);
+
+    $this->assertDatabaseHas('wallet_transactions', [
+        'wallet_id'        => $wallet->id,
+        'amount'           => 300,
+        'transaction_type' => 'credit',
+    ]);
+});

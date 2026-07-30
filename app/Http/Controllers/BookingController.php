@@ -306,6 +306,23 @@ class BookingController extends Controller
                         );
                     }
 
+                    if ($locked->payment_method === 'wallet') {
+                        $owner  = $locked->user;
+                        $wallet = Wallet::where('user_id', $owner->id)->lockForUpdate()->first();
+
+                        if ($wallet) {
+                            $wallet->increment('balance', $locked->final_price);
+
+                            WalletTransaction::create([
+                                'wallet_id'        => $wallet->id,
+                                'user_id'          => $owner->id,
+                                'amount'           => $locked->final_price,
+                                'transaction_type' => 'credit',
+                                'transaction_date' => now(),
+                            ]);
+                        }
+                    }
+
                     if ($locked->coupon_id) {
                         Coupon::where('id', $locked->coupon_id)
                             ->where('used_count', '>', 0)
