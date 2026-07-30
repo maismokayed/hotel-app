@@ -18,6 +18,9 @@ class StoreBookingRequest extends FormRequest
         return [
             'hotel_id'          => 'required|exists:hotels,id',
 
+            'guest_full_name'   => 'required|string|max:255',
+            'guest_phone'       => 'required|string|max:20',
+
             'rooms'             => 'required|array|min:1',
             'rooms.*.type'      => ['required', 'string', Rule::in(array_column(RoomType::cases(), 'value'))],
             'rooms.*.quantity'  => 'required|integer|min:1|max:20',

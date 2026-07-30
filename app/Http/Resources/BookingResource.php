@@ -18,6 +18,11 @@ class BookingResource extends JsonResource
                 'email'     => $this->user->email,
             ] : null,
 
+            'guest' => [
+                'full_name' => $this->guest_full_name,
+                'phone'     => $this->guest_phone,
+            ],
+
             'hotel' => $this->hotel ? [
                 'id'   => $this->hotel->id,
                 'name' => [

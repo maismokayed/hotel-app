@@ -186,6 +186,8 @@ class BookingController extends Controller
                     'user_id'          => $request->user()->id,
                     'hotel_id'         => $hotel->id,
                     'coupon_id'        => $couponId,
+                    'guest_full_name'  => $data['guest_full_name'],
+                    'guest_phone'      => $data['guest_phone'],
                     'check_in_date'    => $data['check_in_date'],
                     'check_out_date'   => $data['check_out_date'],
                     'status'           => $status,
