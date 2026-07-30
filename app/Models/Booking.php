@@ -12,6 +12,8 @@ class Booking extends Model
         'user_id',
         'hotel_id',
         'coupon_id',
+        'guest_full_name',
+        'guest_phone',
         'check_in_date',
         'check_out_date',
         'status',

@@ -41,6 +41,8 @@ afterEach(function () {
 it('can create a booking successfully', function () {
     $response = $this->actingAs($this->user)
         ->postJson('/api/bookings', [
+            'guest_full_name'  => 'Test Guest',
+            'guest_phone'      => '0999999999',
             'hotel_id'         => $this->hotel->id,
             'rooms'            => [
                 ['type' => 'single', 'quantity' => 1],
@@ -86,6 +88,8 @@ it('confirms a wallet-paid booking immediately and debits the wallet', function 
 
     $response = $this->actingAs($this->user)
         ->postJson('/api/bookings', [
+            'guest_full_name'  => 'Test Guest',
+            'guest_phone'      => '0999999999',
             'hotel_id'         => $this->hotel->id,
             'rooms'            => [
                 ['type' => 'single', 'quantity' => 1],
@@ -116,6 +120,8 @@ it('rejects a wallet booking when the wallet balance is insufficient', function 
 
     $response = $this->actingAs($this->user)
         ->postJson('/api/bookings', [
+            'guest_full_name'  => 'Test Guest',
+            'guest_phone'      => '0999999999',
             'hotel_id'         => $this->hotel->id,
             'rooms'            => [
                 ['type' => 'single', 'quantity' => 1],
@@ -143,6 +149,8 @@ it('cannot book when not enough rooms of a type are available', function () {
 
     $response = $this->actingAs($this->user)
         ->postJson('/api/bookings', [
+            'guest_full_name'  => 'Test Guest',
+            'guest_phone'      => '0999999999',
             'hotel_id'         => $this->hotel->id,
             'rooms'            => [
                 ['type' => 'single', 'quantity' => 1],
@@ -167,6 +175,8 @@ it('can apply a valid coupon', function () {
 
     $response = $this->actingAs($this->user)
         ->postJson('/api/bookings', [
+            'guest_full_name'  => 'Test Guest',
+            'guest_phone'      => '0999999999',
             'hotel_id'         => $this->hotel->id,
             'rooms'            => [
                 ['type' => 'single', 'quantity' => 1],
@@ -189,6 +199,8 @@ it('cannot apply an invalid coupon', function () {
 
     $response = $this->actingAs($this->user)
         ->postJson('/api/bookings', [
+            'guest_full_name'  => 'Test Guest',
+            'guest_phone'      => '0999999999',
             'hotel_id'         => $this->hotel->id,
             'rooms'            => [
                 ['type' => 'single', 'quantity' => 1],
