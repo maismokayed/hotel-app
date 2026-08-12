@@ -285,7 +285,6 @@ class BookingController extends Controller
         $checkInDate = $booking->check_in_date->copy()->startOfDay();
         $checkOutDate = $booking->check_out_date->copy()->startOfDay();
 
-        $nights = max(1, $checkInDate->diffInDays($checkOutDate));
 
         $daysUntilCheckIn = $today->diffInDays($checkInDate);
         if ($checkInDate->lt($today)) {
@@ -347,7 +346,7 @@ class BookingController extends Controller
             ], 200);
         }
 
-        $fee = round($booking->final_price / $nights, 2);
+        $fee = round($booking->final_price * 0.40, 2);
 
         if (! $request->boolean('confirm')) {
             if ($booking->payment_method === 'wallet') {
