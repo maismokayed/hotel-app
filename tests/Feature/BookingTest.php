@@ -350,7 +350,7 @@ it('cancels a booking for free when more than 3 days remain before check-in', fu
     $booking->rooms()->attach($this->room->id);
 
     $response = $this->actingAs($this->user)
-        ->patchJson("/api/bookings/{$booking->id}/cancel");
+        ->patchJson("/api/bookings/{$booking->id}/cancel", ['confirm' => true]);
 
     $response->assertOk();
 
@@ -358,6 +358,39 @@ it('cancels a booking for free when more than 3 days remain before check-in', fu
         'id'     => $booking->id,
         'status' => 'cancelled',
     ]);
+});
+
+it('returns the confirmation prompt and waits, without touching a free cancellation yet', function () {
+    $wallet = Wallet::factory()->create([
+        'user_id' => $this->user->id,
+        'balance' => 100,
+    ]);
+
+    $booking = Booking::factory()->create([
+        'user_id'        => $this->user->id,
+        'hotel_id'       => $this->hotel->id,
+        'status'         => 'confirmed',
+        'payment_method' => 'wallet',
+        'check_in_date'  => now()->addDays(10),
+        'check_out_date' => now()->addDays(13),
+        'final_price'    => 300,
+    ]);
+    $booking->rooms()->attach($this->room->id);
+
+    $response = $this->actingAs($this->user)
+        ->patchJson("/api/bookings/{$booking->id}/cancel");
+
+    $response->assertOk()
+        ->assertJsonPath('requires_confirmation', true)
+        ->assertJsonPath('fee', 0)
+        ->assertJsonPath('refund_amount', '300.00');
+
+    $this->assertDatabaseHas('bookings', [
+        'id'     => $booking->id,
+        'status' => 'confirmed',
+    ]);
+
+    expect((float) $wallet->fresh()->balance)->toBe(100.00);
 });
 
 it('cannot cancel a booking that is already completed', function () {
@@ -394,8 +427,8 @@ it('returns the fee breakdown and waits for confirmation on a late cancellation,
 
     $response->assertOk()
         ->assertJsonPath('requires_confirmation', true)
-        ->assertJsonPath('fee', 100)
-        ->assertJsonPath('message.ar', 'الإلغاء بعد أقل من 3 أيام من موعد الوصول يترتب عليه خصم غرامة قدرها 100 من محفظتك. هل تريد المتابعة؟');
+        ->assertJsonPath('fee', 120)
+        ->assertJsonPath('message.ar', 'الإلغاء بعد أقل من 3 أيام من موعد الوصول يترتب عليه خصم غرامة قدرها 120 من محفظتك. هل تريد المتابعة؟');
 
     $this->assertDatabaseHas('bookings', [
         'id'     => $booking->id,
@@ -424,18 +457,18 @@ it('charges the late-cancellation fee from the wallet on a cash-paid booking', f
         ->patchJson("/api/bookings/{$booking->id}/cancel", ['confirm' => true]);
 
     $response->assertOk()
-        ->assertJsonPath('message.ar', 'تم إلغاء الحجز، وتم خصم 100 من محفظتك كغرامة إلغاء متأخر.');
+        ->assertJsonPath('message.ar', 'تم إلغاء الحجز، وتم خصم 120 من محفظتك كغرامة إلغاء متأخر.');
 
     $this->assertDatabaseHas('bookings', [
         'id'     => $booking->id,
         'status' => 'cancelled',
     ]);
 
-    expect((float) $wallet->fresh()->balance)->toBe(400.00); // 500 - 100 fee
+    expect((float) $wallet->fresh()->balance)->toBe(380.00); // 500 - 120 fee
 
     $this->assertDatabaseHas('wallet_transactions', [
         'wallet_id'        => $wallet->id,
-        'amount'           => 100,
+        'amount'           => 120,
         'transaction_type' => 'debit',
     ]);
 });
@@ -514,19 +547,19 @@ it('refunds the remaining balance to the wallet on a late wallet-paid cancellati
         ->patchJson("/api/bookings/{$booking->id}/cancel", ['confirm' => true]);
 
     $response->assertOk()
-        ->assertJsonPath('message.ar', 'تم إلغاء الحجز. تم خصم غرامة 100 واسترجاع الباقي إلى محفظتك.');
+        ->assertJsonPath('message.ar', 'تم إلغاء الحجز. تم خصم غرامة 120 واسترجاع الباقي إلى محفظتك.');
 
     $this->assertDatabaseHas('bookings', [
         'id'     => $booking->id,
         'status' => 'cancelled',
     ]);
 
-    // fee = 300/3 nights = 100, refund = 300 - 100 = 200
-    expect((float) $wallet->fresh()->balance)->toBe(400.00);
+    // fee = 300 × 0.40 = 120, refund = 300 - 120 = 180
+    expect((float) $wallet->fresh()->balance)->toBe(380.00);
 
     $this->assertDatabaseHas('wallet_transactions', [
         'wallet_id'        => $wallet->id,
-        'amount'           => 200,
+        'amount'           => 180,
         'transaction_type' => 'credit',
     ]);
 });
@@ -556,7 +589,7 @@ it('lets an admin cancel on behalf of a customer, moving money in the customer w
 
     $response->assertOk();
 
-    expect((float) $customerWallet->fresh()->balance)->toBe(400.00);
+    expect((float) $customerWallet->fresh()->balance)->toBe(380.00); // 500 - 120 fee
 });
 
 it('restores the coupon usage count when a coupon-booking is cancelled', function () {
@@ -577,7 +610,7 @@ it('restores the coupon usage count when a coupon-booking is cancelled', functio
     $booking->rooms()->attach($this->room->id);
 
     $this->actingAs($this->user)
-        ->patchJson("/api/bookings/{$booking->id}/cancel")
+        ->patchJson("/api/bookings/{$booking->id}/cancel", ['confirm' => true])
         ->assertOk();
 
     $this->assertDatabaseHas('coupons', [
@@ -695,7 +728,18 @@ it('treats exactly 4 days before check-in as a free cancellation', function () {
     $response = $this->actingAs($this->user)
         ->patchJson("/api/bookings/{$booking->id}/cancel");
 
-    $response->assertOk();
+    $response->assertOk()
+        ->assertJsonPath('requires_confirmation', true)
+        ->assertJsonPath('fee', 0);
+
+    $this->actingAs($this->user)
+        ->patchJson("/api/bookings/{$booking->id}/cancel", ['confirm' => true])
+        ->assertOk();
+
+    $this->assertDatabaseHas('bookings', [
+        'id'     => $booking->id,
+        'status' => 'cancelled',
+    ]);
 });
 
 // ============================================================
@@ -750,8 +794,8 @@ it('rounds the late-cancellation fee to 2 decimals when it does not divide evenl
         'status'         => 'pending',
         'payment_method' => 'cash',
         'check_in_date'  => now()->addDays(2),
-        'check_out_date' => now()->addDays(5), // 3 nights
-        'final_price'    => 100, // 100/3 = 33.33...
+        'check_out_date' => now()->addDays(5),
+        'final_price'    => 83.39, // 83.39 × 0.40 = 33.356 → rounds to 33.36
     ]);
     $booking->rooms()->attach($this->room->id);
 
@@ -759,7 +803,7 @@ it('rounds the late-cancellation fee to 2 decimals when it does not divide evenl
         ->patchJson("/api/bookings/{$booking->id}/cancel");
 
     $response->assertOk()
-        ->assertJsonPath('fee', 33.33);
+        ->assertJsonPath('fee', 33.36);
 });
 it('refunds the full amount to the wallet on a free (non-late) cancellation', function () {
     $wallet = Wallet::factory()->create([
@@ -779,7 +823,7 @@ it('refunds the full amount to the wallet on a free (non-late) cancellation', fu
     $booking->rooms()->attach($this->room->id);
 
     $response = $this->actingAs($this->user)
-        ->patchJson("/api/bookings/{$booking->id}/cancel");
+        ->patchJson("/api/bookings/{$booking->id}/cancel", ['confirm' => true]);
 
     $response->assertOk();
 

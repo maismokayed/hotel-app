@@ -294,6 +294,31 @@ class BookingController extends Controller
         $isLateCancellation = $daysUntilCheckIn <= 3;
 
         if (! $isLateCancellation) {
+            if (! $request->boolean('confirm')) {
+                if ($booking->payment_method === 'wallet') {
+                    return response()->json([
+                        'success' => true,
+                        'requires_confirmation' => true,
+                        'fee'                   => 0,
+                        'refund_amount'         => $booking->final_price,
+                        'message' => [
+                            'ar' => "هل أنت متأكد من إلغاء الحجز؟ لا يوجد أي غرامة، وسيتم استرجاع كامل المبلغ ({$booking->final_price}) إلى محفظتك. هل تريد المتابعة؟",
+                            'en' => "Are you sure you want to cancel this booking? No fee applies, and the full amount ({$booking->final_price}) will be refunded to your wallet. Do you want to continue?",
+                        ],
+                    ], 200);
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'requires_confirmation' => true,
+                    'fee'                   => 0,
+                    'message' => [
+                        'ar' => 'هل أنت متأكد من إلغاء الحجز؟ لا يوجد أي غرامة إلغاء. هل تريد المتابعة؟',
+                        'en' => 'Are you sure you want to cancel this booking? No cancellation fee applies. Do you want to continue?',
+                    ],
+                ], 200);
+            }
+
             try {
                 DB::transaction(function () use ($booking) {
                     $locked = Booking::where('id', $booking->id)->lockForUpdate()->first();
