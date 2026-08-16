@@ -22,6 +22,14 @@ class DashboardController extends Controller
             'rooms'     => $this->roomStats(),
             'wallet'    => $this->walletStats(),
             'users'     => $this->userStats(),
+
+            // بيانات الرسوم البيانية بلوحة الأدمن
+            'charts'    => [
+                'monthly_booking_growth' => $this->monthlyBookingGrowth(),
+                'hotels_by_city'         => $this->hotelsByCity(),
+                'top_hotels'             => $this->topHotels(),
+                'user_distribution'      => $this->userDistribution(),
+            ],
         ]);
     }
 
@@ -123,5 +131,80 @@ class DashboardController extends Controller
                 ->whereYear('created_at', now()->year)
                 ->count(),
         ];
+    }
+
+    /**
+     * نمو الحجوزات الشهري (آخر 6 أشهر، شامل الشهر الحالي)
+     * ملاحظة: التجميع بيصير بـ PHP (Carbon) مش بـ raw SQL (YEAR/MONTH)
+     * لأنو هاي الدوال مش مدعومة بـ SQLite (بيئة التست)، بعكس MySQL (بيئة الإنتاج).
+     */
+    private function monthlyBookingGrowth(): array
+    {
+        $start = now()->subMonths(5)->startOfMonth();
+
+        $grouped = Booking::where('created_at', '>=', $start)
+            ->get(['created_at'])
+            ->groupBy(fn($booking) => $booking->created_at->format('Y-m'));
+
+        return collect(range(5, 0))->map(function ($i) use ($grouped) {
+            $date = now()->subMonths($i)->startOfMonth();
+            $key  = $date->format('Y-m');
+
+            return [
+                'month' => $date->translatedFormat('F Y'),
+                'count' => $grouped->get($key, collect())->count(),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * توزيع الفنادق حسب المدينة
+     */
+    private function hotelsByCity(): array
+    {
+        return Hotel::join('cities', 'hotels.city_id', '=', 'cities.id')
+            ->select('cities.name_ar as city', DB::raw('count(hotels.id) as count'))
+            ->groupBy('cities.id', 'cities.name_ar')
+            ->orderByDesc('count')
+            ->get()
+            ->map(fn($row) => ['city' => $row->city, 'count' => (int) $row->count])
+            ->all();
+    }
+
+    /**
+     * أفضل 5 فنادق حسب عدد الحجوزات
+     * bookings.hotel_id موجود مباشرة (بعد ميغريشن restructure_bookings_for_multi_room)
+     */
+    private function topHotels(): array
+    {
+        return Booking::join('hotels', 'bookings.hotel_id', '=', 'hotels.id')
+            ->select('hotels.id', 'hotels.name_ar', DB::raw('count(bookings.id) as bookings_count'))
+            ->groupBy('hotels.id', 'hotels.name_ar')
+            ->orderByDesc('bookings_count')
+            ->limit(5)
+            ->get()
+            ->map(fn($row) => [
+                'hotel_id' => $row->id,
+                'name'     => $row->name_ar,
+                'bookings' => (int) $row->bookings_count,
+            ])
+            ->all();
+    }
+
+    /**
+     * توزيع المستخدمين حسب الدور (admin / manager / user)
+     * ⚠️ تصحيح: شلت فلتر guard_name='api' لأنو أسيست/تست فعلية (AuthTest, WalletTest)
+     * بتأكد إنو assignRole() و role: middleware عندك بيشتغلو عالـ guard الافتراضي، مش api تحديداً.
+     * فلترة الـ api كانت رح ترجع نتيجة فاضية دايماً بالإنتاج.
+     */
+    private function userDistribution(): array
+    {
+        return DB::table('model_has_roles')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->select('roles.name', DB::raw('count(*) as count'))
+            ->groupBy('roles.name')
+            ->get()
+            ->map(fn($row) => ['role' => $row->name, 'count' => (int) $row->count])
+            ->all();
     }
 }
