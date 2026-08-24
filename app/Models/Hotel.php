@@ -25,6 +25,8 @@ class Hotel extends Model implements HasMedia
         'address_en',
         'phone',
         'email',
+        'facebook_url',
+        'instagram_url',
         'star_rating',
         'is_active',
         'user_id',

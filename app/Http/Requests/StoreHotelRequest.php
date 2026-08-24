@@ -36,6 +36,8 @@ class StoreHotelRequest extends FormRequest
 
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email',
+            'facebook_url' => 'nullable|url|max:255',
+            'instagram_url' => 'nullable|url|max:255',
             'star_rating' => 'nullable|integer|min:1|max:5',
 
             'images' => 'nullable|array|max:5',
