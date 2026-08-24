@@ -8,6 +8,7 @@ use App\Models\WalletTransaction;
 use App\Http\Requests\WalletDepositRequest;
 use App\Http\Resources\WalletResource;
 use App\Http\Resources\WalletTransactionResource;
+use Illuminate\Support\Facades\DB;
 
 class WalletController extends Controller
 {
@@ -16,6 +17,7 @@ class WalletController extends Controller
         $wallet = $request->user()->wallet;
 
         if (!$wallet) {
+
             return response()->json([
                 'success' => false,
                 'message' => [
@@ -33,22 +35,18 @@ class WalletController extends Controller
         $user   = $request->user();
         $wallet = $user->wallet;
 
-        if (!$wallet) {
-            $wallet = Wallet::create([
-                'user_id' => $user->id,
-                'balance' => 0,
+        DB::transaction(function () use ($wallet, $user, $request) {
+            $wallet->increment('balance', $request->amount);
+
+            WalletTransaction::create([
+                'wallet_id'        => $wallet->id,
+                'user_id'          => $user->id,
+                'amount'           => $request->amount,
+                'transaction_type' => 'credit',
+                'reason'           => 'deposit',
+                'transaction_date' => now(),
             ]);
-        }
-
-        $wallet->increment('balance', $request->amount);
-
-        WalletTransaction::create([
-            'wallet_id'        => $wallet->id,
-            'user_id'          => $user->id,
-            'amount'           => $request->amount,
-            'transaction_type' => 'credit',
-            'transaction_date' => now(),
-        ]);
+        });
 
         return new WalletResource($wallet->fresh());
     }
@@ -67,7 +65,13 @@ class WalletController extends Controller
             ], 404);
         }
 
-        $transactions = $wallet->transactions()->latest()->get();
+        $validated = $request->validate([
+            'per_page' => 'nullable|integer|min:1|max:50',
+        ]);
+
+        $perPage = $validated['per_page'] ?? 15;
+
+        $transactions = $wallet->transactions()->latest()->paginate($perPage);
 
         return WalletTransactionResource::collection($transactions);
     }

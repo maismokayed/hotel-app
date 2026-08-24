@@ -176,6 +176,7 @@ class BookingController extends Controller
                         'user_id'          => $request->user()->id,
                         'amount'           => $finalPrice,
                         'transaction_type' => 'debit',
+                        'reason'           => 'payment',
                         'transaction_date' => now(),
                     ]);
                 }
@@ -342,6 +343,7 @@ class BookingController extends Controller
                                 'user_id'          => $owner->id,
                                 'amount'           => $locked->final_price,
                                 'transaction_type' => 'credit',
+                                'reason'           => 'refund',
                                 'transaction_date' => now(),
                             ]);
                         }
@@ -424,6 +426,7 @@ class BookingController extends Controller
                         'user_id'          => $owner->id,
                         'amount'           => $refund,
                         'transaction_type' => 'credit',
+                        'reason'           => 'refund',
                         'transaction_date' => now(),
                     ]);
                 } else {
@@ -441,6 +444,7 @@ class BookingController extends Controller
                         'user_id'          => $owner->id,
                         'amount'           => $fee,
                         'transaction_type' => 'debit',
+                        'reason'           => 'payment',
                         'transaction_date' => now(),
                     ]);
                 }
