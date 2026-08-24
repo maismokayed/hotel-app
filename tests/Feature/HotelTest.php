@@ -993,3 +993,138 @@ it('does not cause N+1 queries when loading images for multiple hotels in index'
 
     $response->assertOk();
 });
+it('creates a hotel with valid social media URLs', function () {
+    $user = User::factory()->create();
+    $user->assignRole('manager');
+
+    $city = City::factory()->create();
+
+    $payload = [
+        'name_ar' => 'فندق الاختبار',
+        'name_en' => 'Test Hotel',
+        'description_ar' => 'وصف الفندق',
+        'description_en' => 'Hotel description',
+        'address_ar' => 'العنوان',
+        'address_en' => 'Address',
+        'city_id' => $city->id,
+        'phone' => '123456789',
+        'email' => 'hotel@example.com',
+        'facebook_url' => 'https://www.facebook.com/testhotel',
+        'instagram_url' => 'https://www.instagram.com/testhotel',
+        'star_rating' => 5,
+    ];
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson('/api/hotels', $payload);
+
+    $response->assertCreated();
+
+    $this->assertDatabaseHas('hotels', [
+        'name_en' => 'Test Hotel',
+        'facebook_url' => 'https://www.facebook.com/testhotel',
+        'instagram_url' => 'https://www.instagram.com/testhotel',
+    ]);
+});
+it('rejects an invalid facebook URL when creating a hotel', function () {
+    $user = User::factory()->create();
+    $user->assignRole('manager');
+
+    $city = City::factory()->create();
+
+    $payload = [
+        'name_ar' => 'فندق الاختبار',
+        'name_en' => 'Test Hotel',
+        'description_ar' => 'وصف الفندق',
+        'description_en' => 'Hotel description',
+        'address_ar' => 'العنوان',
+        'address_en' => 'Address',
+        'city_id' => $city->id,
+        'phone' => '123456789',
+        'email' => 'hotel@example.com',
+        'facebook_url' => 'not-a-valid-url',
+        'instagram_url' => 'https://www.instagram.com/testhotel',
+        'star_rating' => 5,
+    ];
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson('/api/hotels', $payload);
+
+    $response
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['facebook_url']);
+});
+it('rejects an invalid instagram URL when creating a hotel', function () {
+    $user = User::factory()->create();
+    $user->assignRole('manager');
+
+    $city = City::factory()->create();
+
+    $payload = [
+        'name_ar' => 'فندق الاختبار',
+        'name_en' => 'Test Hotel',
+        'description_ar' => 'وصف الفندق',
+        'description_en' => 'Hotel description',
+        'address_ar' => 'العنوان',
+        'address_en' => 'Address',
+        'city_id' => $city->id,
+        'phone' => '123456789',
+        'email' => 'hotel@example.com',
+        'facebook_url' => 'https://www.facebook.com/testhotel',
+        'instagram_url' => 'not-a-valid-url',
+        'star_rating' => 5,
+    ];
+
+    $response = $this
+        ->actingAs($user)
+        ->postJson('/api/hotels', $payload);
+
+    $response
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['instagram_url']);
+});
+it('updates hotel social media URLs', function () {
+    $user = User::factory()->create();
+    $user->assignRole('manager');
+
+    $hotel = Hotel::factory()->create([
+        'user_id' => $user->id,
+        'facebook_url' => 'https://www.facebook.com/oldhotel',
+        'instagram_url' => 'https://www.instagram.com/oldhotel',
+    ]);
+
+    $response = $this
+        ->actingAs($user)
+        ->putJson("/api/hotels/{$hotel->id}", [
+            'facebook_url' => 'https://www.facebook.com/newhotel',
+            'instagram_url' => 'https://www.instagram.com/newhotel',
+        ]);
+
+    $response->assertOk();
+
+    $this->assertDatabaseHas('hotels', [
+        'id' => $hotel->id,
+        'facebook_url' => 'https://www.facebook.com/newhotel',
+        'instagram_url' => 'https://www.instagram.com/newhotel',
+    ]);
+});
+it('returns social media URLs in hotel resource', function () {
+    $hotel = Hotel::factory()->create([
+        'facebook_url' => 'https://www.facebook.com/testhotel',
+        'instagram_url' => 'https://www.instagram.com/testhotel',
+    ]);
+
+    $response = $this->getJson("/api/hotels/{$hotel->id}");
+
+    $response
+        ->assertOk()
+        ->assertJsonPath(
+            'data.contact.facebook',
+            'https://www.facebook.com/testhotel'
+        )
+        ->assertJsonPath(
+            'data.contact.instagram',
+            'https://www.instagram.com/testhotel'
+        );
+});

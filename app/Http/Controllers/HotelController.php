@@ -37,10 +37,14 @@ class HotelController extends Controller
                         });
                 });
             })
-            ->when($request->filled('city_id'), fn($q) =>
-            $q->where('city_id', $request->city_id))
-            ->when($request->filled('star_rating'), fn($q) =>
-            $q->where('star_rating', $request->star_rating))
+            ->when(
+                $request->filled('city_id'),
+                fn($q) => $q->where('city_id', $request->city_id)
+            )
+            ->when(
+                $request->filled('star_rating'),
+                fn($q) => $q->where('star_rating', $request->star_rating)
+            )
             ->withCount('bookings')
             ->when($request->sort === 'popular', function ($q) {
                 $q->orderByDesc('bookings_count');
@@ -51,20 +55,31 @@ class HotelController extends Controller
 
         // Eager-load media collections too, to avoid N+1 queries when
         // HotelResource calls getFirstMediaUrl()/getMedia() per hotel.
-        $hotels->getCollection()->load('user.roles', 'city.media', 'services', 'media');
+        $hotels->getCollection()->load(
+            'user.roles',
+            'city.media',
+            'services',
+            'media'
+        );
+
         return HotelResource::collection($hotels);
     }
+
     public function show(Hotel $hotel)
     {
-
-        return new HotelResource($hotel->load('user', 'city', 'services', 'media'));
+        return new HotelResource(
+            $hotel->load('user', 'city', 'services', 'media')
+        );
     }
 
     public function store(StoreHotelRequest $request)
     {
         $data = $request->validated();
 
-        $similarHotel = Hotel::where('name_en', trim($data['name_en']))
+        $similarHotel = Hotel::where(
+            'name_en',
+            trim($data['name_en'])
+        )
             ->where('city_id', $data['city_id'])
             ->first();
 
@@ -76,7 +91,9 @@ class HotelController extends Controller
                     'en' => 'Hotel already exists in this city.',
                 ],
                 'data' => [
-                    'existing_hotel' => new HotelResource($similarHotel->load('user', 'city')),
+                    'existing_hotel' => new HotelResource(
+                        $similarHotel->load('user', 'city')
+                    ),
                 ],
             ], 409);
         }
@@ -86,6 +103,7 @@ class HotelController extends Controller
         // in the database with a partial set of images.
         $hotel = DB::transaction(function () use ($data, $request) {
             $hotel = new Hotel();
+
             $hotel->name_ar = trim($data['name_ar']);
             $hotel->name_en = trim($data['name_en']);
             $hotel->description_ar = $data['description_ar'] ?? null;
@@ -95,14 +113,20 @@ class HotelController extends Controller
             $hotel->city_id = $data['city_id'];
             $hotel->phone = $data['phone'] ?? null;
             $hotel->email = $data['email'] ?? null;
+
+            $hotel->facebook_url = $data['facebook_url'] ?? null;
+            $hotel->instagram_url = $data['instagram_url'] ?? null;
+
             $hotel->star_rating = $data['star_rating'] ?? null;
             $hotel->is_active = true;
             $hotel->user_id = auth()->id();
+
             $hotel->save();
 
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
-                    $hotel->addMedia($image)->toMediaCollection('images');
+                    $hotel->addMedia($image)
+                        ->toMediaCollection('images');
                 }
             }
 
@@ -116,7 +140,9 @@ class HotelController extends Controller
                 'en' => 'Hotel created successfully.',
             ],
             'data' => [
-                'hotel' => new HotelResource($hotel->load('user', 'city', 'media')),
+                'hotel' => new HotelResource(
+                    $hotel->load('user', 'city', 'media')
+                ),
             ],
         ], 201);
     }
@@ -143,7 +169,9 @@ class HotelController extends Controller
                     'en' => 'Another hotel with the same name already exists in this city.',
                 ],
                 'data' => [
-                    'existing_hotel' => new HotelResource($similarHotel->load('user', 'city')),
+                    'existing_hotel' => new HotelResource(
+                        $similarHotel->load('user', 'city')
+                    ),
                 ],
             ], 409);
         }
@@ -163,12 +191,20 @@ class HotelController extends Controller
 
                 'phone' => $data['phone'] ?? $hotel->phone,
                 'email' => $data['email'] ?? $hotel->email,
+
+                'facebook_url' =>
+                $data['facebook_url'] ?? $hotel->facebook_url,
+
+                'instagram_url' =>
+                $data['instagram_url'] ?? $hotel->instagram_url,
+
                 'star_rating' => $data['star_rating'] ?? $hotel->star_rating,
             ]);
 
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
-                    $hotel->addMedia($image)->toMediaCollection('images');
+                    $hotel->addMedia($image)
+                        ->toMediaCollection('images');
                 }
             }
         });
@@ -180,7 +216,9 @@ class HotelController extends Controller
                 'en' => 'Hotel updated successfully.',
             ],
             'data' => [
-                'hotel' => new HotelResource($hotel->fresh()->load('user', 'city', 'media')),
+                'hotel' => new HotelResource(
+                    $hotel->fresh()->load('user', 'city', 'media')
+                ),
             ],
         ]);
     }
@@ -188,6 +226,7 @@ class HotelController extends Controller
     public function destroy(Hotel $hotel)
     {
         $this->authorizeHotelAccess($hotel);
+
         $hotel->delete();
 
         return response()->json([
@@ -222,8 +261,10 @@ class HotelController extends Controller
         }
     }
 
-    public function transfer(TransferHotelRequest $request, Hotel $hotel)
-    {
+    public function transfer(
+        TransferHotelRequest $request,
+        Hotel $hotel
+    ) {
         $newOwner = \App\Models\User::find($request->user_id);
 
         if (!$newOwner) {
@@ -236,7 +277,10 @@ class HotelController extends Controller
             ], 404);
         }
 
-        if (!$newOwner->hasRole('manager') && !$newOwner->hasRole('admin')) {
+        if (
+            !$newOwner->hasRole('manager') &&
+            !$newOwner->hasRole('admin')
+        ) {
             return response()->json([
                 'success' => false,
                 'message' => [
@@ -246,7 +290,9 @@ class HotelController extends Controller
             ], 422);
         }
 
-        $hotel->update(['user_id' => $request->user_id]);
+        $hotel->update([
+            'user_id' => $request->user_id
+        ]);
 
         return response()->json([
             'success' => true,
@@ -255,7 +301,9 @@ class HotelController extends Controller
                 'en' => 'Hotel transferred successfully.',
             ],
             'data' => [
-                'hotel' => new HotelResource($hotel->fresh()->load('user', 'city')),
+                'hotel' => new HotelResource(
+                    $hotel->fresh()->load('user', 'city')
+                ),
             ],
         ]);
     }
@@ -287,10 +335,10 @@ class HotelController extends Controller
     public function getImages(Hotel $hotel)
     {
         $images = $hotel->getMedia('images')->map(fn($media) => [
-            'id'         => $media->id,
-            'url'        => $media->getUrl(),
-            'name'       => $media->file_name,
-            'mime_type'  => $media->mime_type,
+            'id' => $media->id,
+            'url' => $media->getUrl(),
+            'name' => $media->file_name,
+            'mime_type' => $media->mime_type,
             'created_at' => $media->created_at,
         ]);
 
@@ -325,21 +373,27 @@ class HotelController extends Controller
             ],
         ]);
     }
+
     public function syncServices(Request $request, Hotel $hotel)
     {
         $this->authorizeHotelAccess($hotel);
 
         $validated = $request->validate([
-            'service_ids'   => 'required|array',
+            'service_ids' => 'required|array',
             'service_ids.*' => 'exists:services,id',
         ]);
 
         $hotel->services()->sync($validated['service_ids']);
 
-        return new HotelResource($hotel->load('user', 'city', 'services'));
+        return new HotelResource(
+            $hotel->load('user', 'city', 'services')
+        );
     }
-    public function updateStatus(UpdateHotelStatusRequest $request, Hotel $hotel)
-    {
+
+    public function updateStatus(
+        UpdateHotelStatusRequest $request,
+        Hotel $hotel
+    ) {
         $this->authorizeHotelAccess($hotel);
 
         $hotel->update([
@@ -354,7 +408,11 @@ class HotelController extends Controller
             ],
             'data' => [
                 'hotel' => new HotelResource(
-                    $hotel->fresh()->load('user', 'city', 'services')
+                    $hotel->fresh()->load(
+                        'user',
+                        'city',
+                        'services'
+                    )
                 ),
             ],
         ]);

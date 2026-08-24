@@ -48,6 +48,8 @@ class HotelResource extends JsonResource
             'contact' => [
                 'phone' => $this->phone,
                 'email' => $this->email,
+                'facebook' => $this->facebook_url,
+                'instagram' => $this->instagram_url,
             ],
 
             'star_rating' => $this->star_rating,
