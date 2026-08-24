@@ -43,6 +43,7 @@ class WalletController extends Controller
                 'user_id'          => $user->id,
                 'amount'           => $request->amount,
                 'transaction_type' => 'credit',
+                'reason'           => 'deposit',
                 'transaction_date' => now(),
             ]);
         });
@@ -64,7 +65,13 @@ class WalletController extends Controller
             ], 404);
         }
 
-        $transactions = $wallet->transactions()->latest()->get();
+        $validated = $request->validate([
+            'per_page' => 'nullable|integer|min:1|max:50',
+        ]);
+
+        $perPage = $validated['per_page'] ?? 15;
+
+        $transactions = $wallet->transactions()->latest()->paginate($perPage);
 
         return WalletTransactionResource::collection($transactions);
     }

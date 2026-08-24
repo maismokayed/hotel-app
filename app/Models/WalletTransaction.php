@@ -7,14 +7,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class WalletTransaction extends Model
 {
-        use HasFactory;
+    use HasFactory;
 
-         protected $fillable = [
+    protected $fillable = [
         'wallet_id',
         'user_id',
         'amount',
         'transaction_date',
         'transaction_type',
+        'reason',
     ];
 
     protected $casts = [
