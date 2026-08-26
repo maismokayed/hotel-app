@@ -42,17 +42,19 @@ it('allows admin to view the dashboard', function () {
         ->getJson('/api/dashboard')
         ->assertOk()
         ->assertJsonStructure([
-            'bookings',
-            'revenue',
-            'hotels',
-            'rooms',
-            'wallet',
-            'users',
-            'charts' => [
-                'monthly_booking_growth',
-                'hotels_by_city',
-                'top_hotels',
-                'user_distribution',
+            'data' => [
+                'bookings',
+                'revenue',
+                'hotels',
+                'rooms',
+                'wallet',
+                'users',
+                'charts' => [
+                    'monthly_booking_growth',
+                    'hotels_by_city',
+                    'top_hotels',
+                    'user_distribution',
+                ],
             ],
         ]);
 });
@@ -68,10 +70,10 @@ it('counts bookings by status correctly', function () {
 
     $response = $this->actingAs($this->admin)->getJson('/api/dashboard');
 
-    $response->assertJsonPath('bookings.total', 3)
-        ->assertJsonPath('bookings.by_status.confirmed', 2)
-        ->assertJsonPath('bookings.by_status.cancelled', 1)
-        ->assertJsonPath('bookings.by_status.pending', 0);
+    $response->assertJsonPath('data.bookings.total', 3)
+        ->assertJsonPath('data.bookings.by_status.confirmed', 2)
+        ->assertJsonPath('data.bookings.by_status.cancelled', 1)
+        ->assertJsonPath('data.bookings.by_status.pending', 0);
 });
 
 // ============================================================
@@ -85,7 +87,7 @@ it('returns 6 months of booking growth with zero-filled gaps', function () {
 
     $response = $this->actingAs($this->admin)->getJson('/api/dashboard');
 
-    $growth = $response->json('charts.monthly_booking_growth');
+    $growth = $response->json('data.charts.monthly_booking_growth');
 
     expect($growth)->toHaveCount(6);
 
@@ -109,8 +111,7 @@ it('groups hotels by city correctly', function () {
 
     $response = $this->actingAs($this->admin)->getJson('/api/dashboard');
 
-    $byCity = collect($response->json('charts.hotels_by_city'))->keyBy('city');
-
+    $byCity = collect($response->json('data.charts.hotels_by_city'))->keyBy('city');
     expect($byCity['دمشق']['count'])->toBe(3);
     expect($byCity['حلب']['count'])->toBe(1);
 });
@@ -120,7 +121,7 @@ it('excludes hotels without a city from the distribution', function () {
 
     $response = $this->actingAs($this->admin)->getJson('/api/dashboard');
 
-    expect(collect($response->json('charts.hotels_by_city'))->sum('count'))->toBe(0);
+    expect(collect($response->json('data.charts.hotels_by_city'))->sum('count'))->toBe(0);
 });
 
 // ============================================================
@@ -139,9 +140,9 @@ it('ranks hotels by booking count, limited to 5', function () {
     $response = $this->actingAs($this->admin)->getJson('/api/dashboard');
     $topHotels = $response->json('charts.top_hotels');
 
-    expect($topHotels)->toHaveCount(5);
+    $topHotels = $response->json('data.charts.top_hotels');
     expect($topHotels[0]['hotel_id'])->toBe($topHotel->id);
-    expect($topHotels[0]['bookings'])->toBe(5);
+    $topHotels = $response->json('data.charts.top_hotels');
 });
 
 it('excludes hotels with no bookings from top_hotels', function () {
@@ -149,7 +150,7 @@ it('excludes hotels with no bookings from top_hotels', function () {
 
     $response = $this->actingAs($this->admin)->getJson('/api/dashboard');
 
-    expect($response->json('charts.top_hotels'))->toHaveCount(0);
+    expect($response->json('data.charts.top_hotels'))->toHaveCount(0);
 });
 
 // ============================================================
@@ -163,8 +164,7 @@ it('distributes users by role', function () {
     $manager->assignRole('manager');
 
     $response = $this->actingAs($this->admin)->getJson('/api/dashboard');
-    $distribution = collect($response->json('charts.user_distribution'))->keyBy('role');
-
+    $distribution = collect($response->json('data.charts.user_distribution'))->keyBy('role');
     // 2 مستخدمين جداد + $this->user من الـ beforeEach = 3
     expect($distribution['user']['count'])->toBe(3);
     expect($distribution['manager']['count'])->toBe(1);

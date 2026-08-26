@@ -6,9 +6,11 @@ use App\Models\Service;
 use App\Http\Resources\ServiceResource;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Traits\ApiResponse;
 
 class ServiceController extends Controller
 {
+    use ApiResponse;
     public function index()
     {
         $services = Service::orderBy('name_ar')->get();
@@ -25,7 +27,11 @@ class ServiceController extends Controller
 
         $service = Service::create($validated);
 
-        return new ServiceResource($service);
+        return $this->success(
+            new ServiceResource($service),
+            ['ar' => 'تم إنشاء الخدمة بنجاح.', 'en' => 'Service created successfully.'],
+            201
+        );
     }
 
     public function update(Request $request, Service $service)
@@ -47,7 +53,10 @@ class ServiceController extends Controller
 
         $service->update($validated);
 
-        return new ServiceResource($service);
+        return $this->success(
+            new ServiceResource($service),
+            ['ar' => 'تم تحديث الخدمة بنجاح.', 'en' => 'Service updated successfully.']
+        );
     }
     public function destroy(Service $service)
     {

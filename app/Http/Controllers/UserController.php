@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateUserRoleRequest;
 use App\Models\User;
+use App\Traits\ApiResponse;
+use App\Http\Resources\UserResource;
 
 class UserController extends Controller
 {
+    use ApiResponse;
     public function updateRole(UpdateUserRoleRequest $request, User $user)
     {
         // 1. لا تسمح للـ admin بتغيير دوره هو نفسه
@@ -59,13 +62,9 @@ class UserController extends Controller
 
         $user->syncRoles([$request->role]);
 
-        return response()->json([
-            'success' => true,
-            'message' => [
-                'ar' => 'تم تحديث دور المستخدم بنجاح.',
-                'en' => 'User role updated successfully.',
-            ],
-            'role' => $request->role,
-        ]);
+        return $this->success(
+            new UserResource($user->fresh()),
+            ['ar' => 'تم تحديث دور المستخدم بنجاح.', 'en' => 'User role updated successfully.']
+        );
     }
 }

@@ -10,9 +10,11 @@ use App\Http\Requests\UpdateRoomRequest;
 use App\Http\Resources\RoomResource;
 use App\Enums\RoomStatus;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use App\Traits\ApiResponse;
 
 class RoomController extends Controller
 {
+    use ApiResponse;
     public function index()
     {
         $rooms = Room::with('hotel')->get();
@@ -83,7 +85,11 @@ class RoomController extends Controller
             $room->addMedia($request->file('image'))->toMediaCollection('images');
         }
 
-        return new RoomResource($room);
+        return $this->success(
+            new RoomResource($room),
+            ['ar' => 'تم إنشاء الغرفة بنجاح.', 'en' => 'Room created successfully.'],
+            201
+        );
     }
 
     public function update(UpdateRoomRequest $request, Room $room)
@@ -101,7 +107,10 @@ class RoomController extends Controller
             $room->clearMediaCollection('images');
         }
 
-        return new RoomResource($room);
+        return $this->success(
+            new RoomResource($room),
+            ['ar' => 'تم تحديث الغرفة بنجاح.', 'en' => 'Room updated successfully.']
+        );
     }
 
     public function destroy(Room $room)
