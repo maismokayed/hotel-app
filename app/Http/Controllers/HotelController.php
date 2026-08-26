@@ -11,9 +11,11 @@ use Illuminate\Http\Request;
 use App\Http\Requests\UpdateHotelStatusRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use App\Traits\ApiResponse;
 
 class HotelController extends Controller
 {
+    use ApiResponse;
     public function index(Request $request)
     {
         $validated = $request->validate([
@@ -385,8 +387,9 @@ class HotelController extends Controller
 
         $hotel->services()->sync($validated['service_ids']);
 
-        return new HotelResource(
-            $hotel->load('user', 'city', 'services')
+        return $this->success(
+            new HotelResource($hotel->load('user', 'city', 'services')),
+            ['ar' => 'تم تحديث خدمات الفندق بنجاح.', 'en' => 'Hotel services updated successfully.']
         );
     }
 

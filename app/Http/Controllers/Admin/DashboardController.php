@@ -2,37 +2,43 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Hotel;
 use App\Models\Room;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use App\Http\Controllers\Controller;
 
 class DashboardController extends Controller
 {
+    use ApiResponse;
+
     public function index(): JsonResponse
     {
-        return response()->json([
-            'bookings'  => $this->bookingStats(),
-            'revenue'   => $this->revenueStats(),
-            'hotels'    => $this->hotelStats(),
-            'rooms'     => $this->roomStats(),
-            'wallet'    => $this->walletStats(),
-            'users'     => $this->userStats(),
-
-            // بيانات الرسوم البيانية بلوحة الأدمن
-            'charts'    => [
-                'monthly_booking_growth' => $this->monthlyBookingGrowth(),
-                'hotels_by_city'         => $this->hotelsByCity(),
-                'top_hotels'             => $this->topHotels(),
-                'user_distribution'      => $this->userDistribution(),
+        return $this->success(
+            [
+                'bookings' => $this->bookingStats(),
+                'revenue'  => $this->revenueStats(),
+                'hotels'   => $this->hotelStats(),
+                'rooms'    => $this->roomStats(),
+                'wallet'   => $this->walletStats(),
+                'users'    => $this->userStats(),
+                'charts'   => [
+                    'monthly_booking_growth' => $this->monthlyBookingGrowth(),
+                    'hotels_by_city'         => $this->hotelsByCity(),
+                    'top_hotels'             => $this->topHotels(),
+                    'user_distribution'      => $this->userDistribution(),
+                ],
             ],
-        ]);
+            [
+                'ar' => 'تم جلب بيانات لوحة التحكم بنجاح.',
+                'en' => 'Dashboard data fetched successfully.',
+            ]
+        );
     }
-
     private function bookingStats(): array
     {
         $total     = Booking::count();
@@ -97,7 +103,7 @@ class DashboardController extends Controller
     {
         $total     = Room::count();
         $available = Room::where('status', 'available')->count();
-        $occupied  = Room::where('status', 'occupied')->count();
+        $occupied  = Room::where('status', 'booked')->count();
 
         $occupancyRate = $total > 0 ? round(($occupied / $total) * 100, 1) : 0;
 
@@ -133,11 +139,6 @@ class DashboardController extends Controller
         ];
     }
 
-    /**
-     * نمو الحجوزات الشهري (آخر 6 أشهر، شامل الشهر الحالي)
-     * ملاحظة: التجميع بيصير بـ PHP (Carbon) مش بـ raw SQL (YEAR/MONTH)
-     * لأنو هاي الدوال مش مدعومة بـ SQLite (بيئة التست)، بعكس MySQL (بيئة الإنتاج).
-     */
     private function monthlyBookingGrowth(): array
     {
         $start = now()->subMonths(5)->startOfMonth();
@@ -157,9 +158,6 @@ class DashboardController extends Controller
         })->values()->all();
     }
 
-    /**
-     * توزيع الفنادق حسب المدينة
-     */
     private function hotelsByCity(): array
     {
         return Hotel::join('cities', 'hotels.city_id', '=', 'cities.id')
@@ -171,10 +169,6 @@ class DashboardController extends Controller
             ->all();
     }
 
-    /**
-     * أفضل 5 فنادق حسب عدد الحجوزات
-     * bookings.hotel_id موجود مباشرة (بعد ميغريشن restructure_bookings_for_multi_room)
-     */
     private function topHotels(): array
     {
         return Booking::join('hotels', 'bookings.hotel_id', '=', 'hotels.id')
@@ -191,12 +185,6 @@ class DashboardController extends Controller
             ->all();
     }
 
-    /**
-     * توزيع المستخدمين حسب الدور (admin / manager / user)
-     * ⚠️ تصحيح: شلت فلتر guard_name='api' لأنو أسيست/تست فعلية (AuthTest, WalletTest)
-     * بتأكد إنو assignRole() و role: middleware عندك بيشتغلو عالـ guard الافتراضي، مش api تحديداً.
-     * فلترة الـ api كانت رح ترجع نتيجة فاضية دايماً بالإنتاج.
-     */
     private function userDistribution(): array
     {
         return DB::table('model_has_roles')

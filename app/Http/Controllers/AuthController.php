@@ -11,23 +11,19 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Wallet;
 use Illuminate\Support\Facades\DB;
+use App\Traits\ApiResponse;
 
 class AuthController extends Controller
 {
+    use ApiResponse;
     public function index()
     {
         $users = User::with('roles')->get();
 
-        return response()->json([
-            'success' => true,
-            'message' => [
-                'ar' => 'تم جلب المستخدمين بنجاح',
-                'en' => 'Users fetched successfully',
-            ],
-            'data' => [
-                'users' => UserResource::collection($users)
-            ]
-        ], 200);
+        return $this->success(
+            UserResource::collection($users),
+            ['ar' => 'تم جلب المستخدمين بنجاح', 'en' => 'Users fetched successfully']
+        );
     }
 
     public function register(RegisterRequest $request)

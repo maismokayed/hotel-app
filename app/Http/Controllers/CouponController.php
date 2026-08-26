@@ -7,10 +7,11 @@ use App\Models\Coupon;
 use App\Http\Requests\StoreCouponRequest;
 use App\Http\Requests\UpdateCouponRequest;
 use App\Http\Resources\CouponResource;
-
+use App\Traits\ApiResponse;
 
 class CouponController extends Controller
 {
+    use ApiResponse;
     public function index()
     {
         $coupons = Coupon::latest()->get();
@@ -38,7 +39,11 @@ class CouponController extends Controller
     public function update(UpdateCouponRequest $request, Coupon $coupon)
     {
         $coupon->update($request->validated());
-        return new CouponResource($coupon);
+        $coupon->update($request->validated());
+        return $this->success(
+            new CouponResource($coupon),
+            ['ar' => 'تم تحديث الكوبون بنجاح.', 'en' => 'Coupon updated successfully.']
+        );
     }
 
     public function destroy(Coupon $coupon)
