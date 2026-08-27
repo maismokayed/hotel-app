@@ -121,7 +121,23 @@ class HotelController extends Controller
 
             $hotel->star_rating = $data['star_rating'] ?? null;
             $hotel->is_active = true;
-            $hotel->user_id = auth()->id();
+            if (!empty($data['user_id']) && auth()->user()->hasRole('admin')) {
+                $owner = \App\Models\User::find($data['user_id']);
+                if (!$owner->hasRole('manager') && !$owner->hasRole('admin')) {
+                    throw new HttpResponseException(
+                        response()->json([
+                            'success' => false,
+                            'message' => [
+                                'ar' => 'يجب أن يكون المستخدم المحدد مديرًا أو مسؤولًا.',
+                                'en' => 'The specified user must be a manager or admin.',
+                            ],
+                        ], 422)
+                    );
+                }
+                $hotel->user_id = $data['user_id'];
+            } else {
+                $hotel->user_id = auth()->id();
+            }
 
             $hotel->save();
 

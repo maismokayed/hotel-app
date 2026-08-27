@@ -181,7 +181,108 @@ it('regular user cannot create a hotel', function () {
         ])
         ->assertForbidden();
 });
+it('admin can assign a hotel directly to a manager on creation', function () {
+    $city = City::first();
 
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $manager = User::factory()->create();
+    $manager->assignRole('manager');
+
+    $this->actingAs($admin)
+        ->postJson('/api/hotels', [
+            'name_ar'    => 'فندق تجريبي',
+            'name_en'    => 'Test Hotel',
+            'city_id'    => $city->id,
+            'address_ar' => 'الشارع الرئيسي',
+            'address_en' => 'Main Street',
+            'user_id'    => $manager->id,
+        ])
+        ->assertCreated()
+        ->assertJsonPath('data.hotel.owner.id', $manager->id);
+});
+
+it('admin creating a hotel without user_id owns it themselves', function () {
+    $city = City::first();
+
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->postJson('/api/hotels', [
+            'name_ar'    => 'فندق تجريبي',
+            'name_en'    => 'Test Hotel',
+            'city_id'    => $city->id,
+            'address_ar' => 'الشارع الرئيسي',
+            'address_en' => 'Main Street',
+        ])
+        ->assertCreated()
+        ->assertJsonPath('data.hotel.owner.id', $admin->id);
+});
+
+it('admin cannot assign a hotel to a regular user', function () {
+    $city = City::first();
+
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $regularUser = User::factory()->create();
+    $regularUser->assignRole('user');
+
+    $this->actingAs($admin)
+        ->postJson('/api/hotels', [
+            'name_ar'    => 'فندق تجريبي',
+            'name_en'    => 'Test Hotel',
+            'city_id'    => $city->id,
+            'address_ar' => 'الشارع الرئيسي',
+            'address_en' => 'Main Street',
+            'user_id'    => $regularUser->id,
+        ])
+        ->assertStatus(422);
+
+    expect(Hotel::where('name_en', 'Test Hotel')->exists())->toBeFalse();
+});
+
+it('admin cannot assign a hotel to a non-existent user_id', function () {
+    $city = City::first();
+
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->postJson('/api/hotels', [
+            'name_ar'    => 'فندق تجريبي',
+            'name_en'    => 'Test Hotel',
+            'city_id'    => $city->id,
+            'address_ar' => 'الشارع الرئيسي',
+            'address_en' => 'Main Street',
+            'user_id'    => 999999,
+        ])
+        ->assertStatus(422);
+});
+
+it('manager cannot assign a hotel to another user on creation', function () {
+    $city = City::first();
+
+    $manager = User::factory()->create();
+    $manager->assignRole('manager');
+
+    $otherManager = User::factory()->create();
+    $otherManager->assignRole('manager');
+
+    $this->actingAs($manager)
+        ->postJson('/api/hotels', [
+            'name_ar'    => 'فندق تجريبي',
+            'name_en'    => 'Test Hotel',
+            'city_id'    => $city->id,
+            'address_ar' => 'الشارع الرئيسي',
+            'address_en' => 'Main Street',
+            'user_id'    => $otherManager->id,
+        ])
+        ->assertCreated()
+        ->assertJsonPath('data.hotel.owner.id', $manager->id);
+});
 it('rejects duplicate hotel in same city', function () {
     $city = City::first();
 
