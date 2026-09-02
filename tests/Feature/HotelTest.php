@@ -7,14 +7,14 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Database\Seeders\RoleSeeder;
+use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\CitySeeder;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->seed([
-        RoleSeeder::class,
+        RolePermissionSeeder::class,
         CitySeeder::class,
     ]);
 });

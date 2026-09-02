@@ -6,7 +6,7 @@ use App\Models\Hotel;
 use App\Models\Booking;
 use App\Models\Coupon;
 use App\Models\Wallet;
-use Database\Seeders\RoleSeeder;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -16,7 +16,7 @@ beforeEach(function () {
     Carbon::setTestNow(Carbon::parse('2026-01-01 10:00:00'));
 
     app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-    $this->seed(RoleSeeder::class);
+    $this->seed(RolePermissionSeeder::class);
 
     $this->user = User::factory()->create();
     $this->user->assignRole('user');

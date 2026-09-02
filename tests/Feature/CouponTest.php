@@ -2,14 +2,14 @@
 
 use App\Models\User;
 use App\Models\Coupon;
-use Database\Seeders\RoleSeeder;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-    $this->seed(RoleSeeder::class);
+    $this->seed(RolePermissionSeeder::class);
 
     // admin
     $this->admin = User::factory()->create();

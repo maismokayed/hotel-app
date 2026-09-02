@@ -5,12 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Database\Seeders\RoleSeeder;
+use Database\Seeders\RolePermissionSeeder;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->seed(RoleSeeder::class);
+    $this->seed(RolePermissionSeeder::class);
 });
 
 it('returns list of services with bilingual names', function () {

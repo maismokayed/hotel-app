@@ -2,13 +2,13 @@
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\User;
-use Database\Seeders\RoleSeeder;
+use Database\Seeders\RolePermissionSeeder;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-    $this->seed(RoleSeeder::class);
+    $this->seed(RolePermissionSeeder::class);
 });
 
 // ============================================================

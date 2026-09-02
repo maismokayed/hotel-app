@@ -5,7 +5,7 @@ use App\Models\Hotel;
 use App\Models\Room;
 use App\Models\Booking;
 use App\Models\Review;
-use Database\Seeders\RoleSeeder;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -15,7 +15,7 @@ beforeEach(function () {
     app()[\Spatie\Permission\PermissionRegistrar::class]
         ->forgetCachedPermissions();
 
-    $this->seed(RoleSeeder::class);
+    $this->seed(RolePermissionSeeder::class);
 
     $this->admin = User::factory()->create();
     $this->admin->assignRole('admin');

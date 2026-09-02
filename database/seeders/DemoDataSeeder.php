@@ -64,7 +64,6 @@ class DemoDataSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $this->call(RoleSeeder::class);
         $this->call(RolePermissionSeeder::class);
 
         if (City::count() === 0) {
@@ -91,7 +90,7 @@ class DemoDataSeeder extends Seeder
             [
                 ['المستخدمون',        User::whereIn('id', $userIds)->count()],
                 ['الفنادق',           $hotelIds->count()],
-                ['صور الفنادق',       Hotel::whereIn('id', $hotelIds)->get()->sum(fn ($hotel) => $hotel->getMedia('images')->count())],
+                ['صور الفنادق',       Hotel::whereIn('id', $hotelIds)->get()->sum(fn($hotel) => $hotel->getMedia('images')->count())],
                 ['الغرف',             Room::whereIn('hotel_id', $hotelIds)->count()],
                 ['الحجوزات',          Booking::whereIn('user_id', $userIds)->count()],
                 ['حركات المحفظة',     WalletTransaction::whereIn('user_id', $userIds)->count()],
