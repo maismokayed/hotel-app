@@ -58,6 +58,19 @@ class DemoBookingsSeeder extends Seeder
         ['kind' => 'confirmed', 'offset' => 45,   'nights' => 2, 'rooms' => ['single' => 1],               'payment' => 'wallet', 'coupon' => null],
     ];
 
+    /**
+     * سيناريوهات إضافية تُطبّق فقط على فنادق DemoRoomsSeeder::FOCUS_HOTELS
+     * (عندها فائض غرف دبل/ديلوكس أصلاً)، حتى يظهر فرق واضح بإحصائيات
+     * "أكتر الفنادق حجزاً" بالداشبورد.
+     */
+    private const EXTRA_SCENARIOS_FOR_FOCUS = [
+        ['kind' => 'completed', 'offset' => -200, 'nights' => 2, 'rooms' => ['double' => 1],               'payment' => 'cash',   'coupon' => null],
+        ['kind' => 'completed', 'offset' => -90,  'nights' => 3, 'rooms' => ['deluxe' => 1],               'payment' => 'wallet', 'coupon' => null],
+        ['kind' => 'completed', 'offset' => -35,  'nights' => 2, 'rooms' => ['double' => 2],               'payment' => 'cash',   'coupon' => null],
+        ['kind' => 'confirmed', 'offset' => 12,   'nights' => 2, 'rooms' => ['deluxe' => 1],               'payment' => 'wallet', 'coupon' => null],
+        ['kind' => 'pending',   'offset' => 22,   'nights' => 3, 'rooms' => ['double' => 1, 'deluxe' => 1], 'payment' => 'cash',   'coupon' => null],
+    ];
+
     /** أسماء ضيوف (عندما يحجز المستخدم لشخص آخر). */
     private const GUESTS = [
         ['name' => 'وسيم العبدالله', 'phone' => '0944110022'],
@@ -99,12 +112,17 @@ class DemoBookingsSeeder extends Seeder
             return;
         }
 
-        $hotels  = DemoHotelsSeeder::hotels()->filter(fn (Hotel $hotel) => $hotel->is_active)->values();
+        $hotels  = DemoHotelsSeeder::hotels()->filter(fn(Hotel $hotel) => $hotel->is_active)->values();
         $coupons = DemoCouponsSeeder::usable()->keyBy('code');
         $wallets = Wallet::whereIn('user_id', $users->pluck('id'))->get()->keyBy('user_id');
 
         $cursor = 0;
         $plans  = [];
+
+        $focusHotelNames = collect(DemoHotelsSeeder::HOTELS)
+            ->whereIn('key', DemoRoomsSeeder::FOCUS_HOTELS)
+            ->pluck('name_en')
+            ->all();
 
         foreach ($hotels as $hotelIndex => $hotel) {
             $rooms = $hotel->rooms()
@@ -116,13 +134,17 @@ class DemoBookingsSeeder extends Seeder
                 continue;
             }
 
-            foreach (self::SCENARIOS as $scenarioIndex => $scenario) {
+            $scenarios = in_array($hotel->name_en, $focusHotelNames, true)
+                ? [...self::SCENARIOS, ...self::EXTRA_SCENARIOS_FOR_FOCUS]
+                : self::SCENARIOS;
+
+            foreach ($scenarios as $scenarioIndex => $scenario) {
                 $user = $users[$cursor % $users->count()];
                 $cursor++;
 
                 // إزاحة بسيطة لكل فندق حتى لا تتكرر نفس التواريخ،
                 // مع إبقاء الإقامة الجارية داخل فترتها في كل الفنادق.
-                $shift = $scenario['kind'] === 'in_stay' ? -($hotelIndex % 3) : $hotelIndex * 3;
+                $shift = $scenario['kind'] === 'in_stay' ? - ($hotelIndex % 3) : $hotelIndex * 3;
 
                 $checkIn = now()->addDays($scenario['offset'] + $shift)->setTime(self::CHECK_HOUR, 0);
 
@@ -143,7 +165,7 @@ class DemoBookingsSeeder extends Seeder
 
         // ترتيب زمني حسب تاريخ إنشاء الحجز حتى تبقى حركات المحفظة منطقية
         // (لا يمكن أن يُدفع من رصيد لم يُودَع بعد).
-        usort($plans, fn (array $a, array $b) => $a['createdAt'] <=> $b['createdAt']);
+        usort($plans, fn(array $a, array $b) => $a['createdAt'] <=> $b['createdAt']);
 
         foreach ($plans as $plan) {
             $this->flushRefunds($plan['createdAt']);
@@ -193,7 +215,7 @@ class DemoBookingsSeeder extends Seeder
         }
 
         $nights     = $scenario['nights'];
-        $totalPrice = round($selected->sum(fn (Room $room) => $nights * (float) $room->price_per_night), 2);
+        $totalPrice = round($selected->sum(fn(Room $room) => $nights * (float) $room->price_per_night), 2);
 
         $discount = $coupon ? $this->discount($coupon, $totalPrice) : 0.0;
         $final    = round(max(0, $totalPrice - $discount), 2);
@@ -276,9 +298,9 @@ class DemoBookingsSeeder extends Seeder
 
         foreach ($request as $type => $quantity) {
             $free = $rooms
-                ->filter(fn (Room $room) => $room->type->value === $type)
-                ->reject(fn (Room $room) => $selected->contains('id', $room->id))
-                ->filter(fn (Room $room) => $this->isFree($room, $checkIn, $checkOut))
+                ->filter(fn(Room $room) => $room->type->value === $type)
+                ->reject(fn(Room $room) => $selected->contains('id', $room->id))
+                ->filter(fn(Room $room) => $this->isFree($room, $checkIn, $checkOut))
                 ->take($quantity);
 
             $selected = $selected->merge($free);
@@ -287,8 +309,8 @@ class DemoBookingsSeeder extends Seeder
 
             if ($missing > 0) {
                 $fallback = $rooms
-                    ->reject(fn (Room $room) => $selected->contains('id', $room->id))
-                    ->filter(fn (Room $room) => $this->isFree($room, $checkIn, $checkOut))
+                    ->reject(fn(Room $room) => $selected->contains('id', $room->id))
+                    ->filter(fn(Room $room) => $this->isFree($room, $checkIn, $checkOut))
                     ->take($missing);
 
                 $selected = $selected->merge($fallback);

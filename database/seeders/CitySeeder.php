@@ -22,10 +22,12 @@ class CitySeeder extends Seeder
             ['name_ar' => 'طرطوس',     'name_en' => 'Tartus'],
             ['name_ar' => 'دير الزور', 'name_en' => 'Deir ez-Zor'],
             ['name_ar' => 'الرقة',     'name_en' => 'Raqqa'],
+            ['name_ar' => 'إدلب',      'name_en' => 'Idlib'],
+            ['name_ar' => 'درعا',       'name_en' => 'Daraa'],
         ];
 
         foreach ($cities as $city) {
-            City::create($city);
+            City::firstOrCreate(['name_en' => $city['name_en']], $city);
         }
     }
 }

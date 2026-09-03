@@ -3,14 +3,20 @@
 namespace Database\Seeders;
 
 use App\Enums\RoomStatus;
-use App\Enums\RoomType;
 use App\Models\Hotel;
 use App\Models\Room;
-use Database\Seeders\Support\DemoImageGenerator;
 use Illuminate\Database\Seeder;
 
 /**
- * غرف الفنادق التجريبية + صورة لكل غرفة.
+ * غرف الفنادق التجريبية.
+ *
+ * ما في صور للغرف هون بشكل مقصود (متل الفنادق، تُضاف لاحقاً يدوياً).
+ * السنغل والجناح دايماً غرفة واحدة بكل فندق. الدبل والديلوكس بين 2-3
+ * حسب تصنيف الفندق بالنجوم، وأربع فنادق "مميزة" (FOCUS_HOTELS) إلها
+ * عدد أكبر من غرف الدبل/الديلوكس لتصير عليها حجوزات أكتر لاحقاً.
+ *
+ * الأسعار بالليرة السورية الجديدة، تقريبية وغير حقيقية، بس متناسبة مع
+ * تصنيف كل فندق بالنجوم.
  *
  * ترقيم الغرف حسب الطابق: 101، 102 ... 201، 202 ...
  */
@@ -25,58 +31,44 @@ class DemoRoomsSeeder extends Seeder
     ];
 
     /**
-     * خطة غرف كل فندق: [النوع => [العدد، سعر الليلة]]
-     * المفتاح هو نفسه key الفندق في DemoHotelsSeeder.
+     * سعر الليلة (ليرة سورية جديدة) لكل نوع غرفة حسب تصنيف الفندق بالنجوم.
+     * محسوبة تقريباً على سعر صرف ~135 ل.س جديدة للدولار (يعني 500 ل.س ≈ 3.7$)،
+     * بأسعار غرف واقعية بالدولار (سنغل 3 نجوم ~30$ لغاية جناح 5 نجوم ~160$).
      */
-    public const PLANS = [
-        'cham_palace' => [
-            ['type' => 'single', 'count' => 6,  'price' => 110],
-            ['type' => 'double', 'count' => 8,  'price' => 180],
-            ['type' => 'deluxe', 'count' => 4,  'price' => 250],
-            ['type' => 'suite',  'count' => 4,  'price' => 320],
-        ],
-        'dar_yasmine' => [
-            ['type' => 'double', 'count' => 4,  'price' => 150],
-            ['type' => 'suite',  'count' => 3,  'price' => 240],
-        ],
-        'shahba_tower' => [
-            ['type' => 'single', 'count' => 8,  'price' => 95],
-            ['type' => 'double', 'count' => 10, 'price' => 160],
-            ['type' => 'deluxe', 'count' => 4,  'price' => 230],
-        ],
-        'baron_house' => [
-            ['type' => 'single', 'count' => 6,  'price' => 45],
-            ['type' => 'double', 'count' => 4,  'price' => 70],
-        ],
-        'afamia_resort' => [
-            ['type' => 'double', 'count' => 8,  'price' => 130],
-            ['type' => 'deluxe', 'count' => 4,  'price' => 190],
-            ['type' => 'suite',  'count' => 4,  'price' => 260],
-        ],
-        'blue_bay' => [
-            ['type' => 'single', 'count' => 3,  'price' => 80],
-            ['type' => 'double', 'count' => 6,  'price' => 110],
-            ['type' => 'suite',  'count' => 3,  'price' => 200],
-        ],
-        'orient_homs' => [
-            ['type' => 'single', 'count' => 4,  'price' => 60],
-            ['type' => 'double', 'count' => 4,  'price' => 90],
-        ],
+    public const PRICES = [
+        2 => ['single' => 2800, 'double' => 4200,  'deluxe' => 6000,  'suite' => 9000],
+        3 => ['single' => 4000, 'double' => 6000,  'deluxe' => 9000,  'suite' => 13000],
+        4 => ['single' => 5200, 'double' => 7800,  'deluxe' => 11400, 'suite' => 16600],
+        5 => ['single' => 6800, 'double' => 10300, 'deluxe' => 14900, 'suite' => 21800],
+    ];
+
+    /**
+     * الفنادق المميزة يلي رح ينكترلها عدد غرف الدبل/الديلوكس.
+     * الـ key لازم يطابق key الفندق بـ DemoHotelsSeeder::HOTELS.
+     */
+    public const FOCUS_HOTELS = [
+        'sheraton_aleppo_hotel', // الشيراتون - حلب
+        'riga_palace_hotel',     // ريغا بالاس - حلب
+        'lamira_resort',         // لاميرا - اللاذقية
+        'four_seasons_damascus', // فورسيزون - دمشق
     ];
 
     public function run(): void
     {
-        $hotels    = DemoHotelsSeeder::hotels();
-        $created   = 0;
-        $withImage = 0;
+        $hotels  = DemoHotelsSeeder::hotels();
+        $created = 0;
+        $skipped = 0;
 
-        foreach (self::PLANS as $hotelKey => $plan) {
-            $hotel = $hotels->get($hotelKey);
+        foreach (DemoHotelsSeeder::HOTELS as $definition) {
+            $hotel = $hotels->get($definition['key']);
 
             if (! $hotel) {
-                $this->command?->warn("  ! لم يتم العثور على الفندق: {$hotelKey}");
+                $this->command?->warn("  ! لم يتم العثور على الفندق: {$definition['key']}");
+                $skipped++;
                 continue;
             }
+
+            $plan = $this->planFor($hotel, $definition['key']);
 
             $floor    = 1;
             $onFloor  = 0;
@@ -108,23 +100,44 @@ class DemoRoomsSeeder extends Seeder
                     if ($room->wasRecentlyCreated) {
                         $created++;
                     }
-
-                    if ($this->attachImage($room, $hotel, $group['type'])) {
-                        $withImage++;
-                    }
                 }
             }
         }
 
         $this->command?->info(sprintf(
-            '  ✔ غرف: %d غرفة جديدة (المجموع %d)، وصور لـ %d غرفة',
+            '  ✔ غرف: %d غرفة جديدة (المجموع %d)%s',
             $created,
             Room::whereIn('hotel_id', $hotels->pluck('id'))->count(),
-            $withImage
+            $skipped ? ", تم تخطي {$skipped} فندق" : ''
         ));
     }
 
-    /** الفندق المغلق كل غرفه صيانة، وباقي الفنادق غرفة صيانة كل 9 غرف. */
+    /** خطة غرف الفندق: سنغل وجناح دايماً 1، دبل وديلوكس حسب النجوم أو حسب كونه فندق مميز. */
+    private function planFor(Hotel $hotel, string $key): array
+    {
+        $prices  = self::PRICES[$hotel->star_rating] ?? self::PRICES[3];
+        $isFocus = in_array($key, self::FOCUS_HOTELS, true);
+
+        if ($isFocus) {
+            $doubleCount = 6;
+            $deluxeCount = 4;
+        } elseif ($hotel->star_rating >= 4) {
+            $doubleCount = 3;
+            $deluxeCount = 3;
+        } else {
+            $doubleCount = 2;
+            $deluxeCount = 2;
+        }
+
+        return [
+            ['type' => 'single', 'count' => 1,            'price' => $prices['single']],
+            ['type' => 'double', 'count' => $doubleCount, 'price' => $prices['double']],
+            ['type' => 'deluxe', 'count' => $deluxeCount, 'price' => $prices['deluxe']],
+            ['type' => 'suite',  'count' => 1,            'price' => $prices['suite']],
+        ];
+    }
+
+    /** الفندق غير المفعّل كل غرفه صيانة، وباقي الفنادق غرفة صيانة كل 9 غرف. */
     private function status(Hotel $hotel, int $sequence): string
     {
         if (! $hotel->is_active) {
@@ -134,44 +147,5 @@ class DemoRoomsSeeder extends Seeder
         return $sequence % 9 === 0
             ? RoomStatus::MAINTENANCE->value
             : RoomStatus::AVAILABLE->value;
-    }
-
-    /**
-     * صورة واحدة لكل غرفة (المجموعة singleFile).
-     * نولّد صورة واحدة لكل (فندق + نوع غرفة) ونعيد استخدام نفس البايتات
-     * لتسريع الـ Seeder.
-     */
-    private function attachImage(Room $room, Hotel $hotel, string $type): bool
-    {
-        static $cache = [];
-
-        if ($room->getMedia('images')->isNotEmpty()) {
-            return true;
-        }
-
-        if (! DemoImageGenerator::available()) {
-            return false;
-        }
-
-        $cacheKey = $hotel->id . ':' . $type;
-
-        if (! isset($cache[$cacheKey])) {
-            $cache[$cacheKey] = DemoImageGenerator::room(
-                RoomType::from($type)->label()['en'] . ' Room',
-                $hotel->name_en,
-                $hotel->id * 1000 + strlen($type) * 7
-            );
-        }
-
-        if ($cache[$cacheKey] === null) {
-            return false;
-        }
-
-        $room->addMediaFromString($cache[$cacheKey])
-            ->usingFileName('room-' . $hotel->id . '-' . $room->room_number . '.jpg')
-            ->usingName($hotel->name_en . ' - Room ' . $room->room_number)
-            ->toMediaCollection('images');
-
-        return true;
     }
 }
