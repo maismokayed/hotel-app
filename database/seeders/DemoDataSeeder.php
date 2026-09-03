@@ -99,10 +99,23 @@ class DemoDataSeeder extends Seeder
         );
 
         $this->command->newLine();
-        $this->command->line('  حسابات الدخول (كلمة المرور للجميع: <fg=yellow>' . self::PASSWORD . '</>)');
-        $this->command->line('    أدمن   : <fg=green>' . DemoUsersSeeder::ADMIN['email'] . '</>');
-        $this->command->line('    مدير   : <fg=green>' . DemoUsersSeeder::MANAGERS[0]['email'] . '</>');
-        $this->command->line('    مستخدم : <fg=green>' . DemoUsersSeeder::USERS[0]['email'] . '</>');
+        $this->command->line('  حسابات الدخول:');
+
+        $this->command->line(
+            '    أدمن   : <fg=green>' . DemoUsersSeeder::ADMIN['email'] .
+                '</> | كلمة المرور: <fg=yellow>' . DemoUsersSeeder::PASSWORDS['admin'] . '</>'
+        );
+
+        $this->command->line(
+            '    مدير   : <fg=green>' . DemoUsersSeeder::MANAGERS[0]['email'] .
+                '</> | كلمة المرور: <fg=yellow>' . DemoUsersSeeder::PASSWORDS['manager'] . '</>'
+        );
+
+        $this->command->line(
+            '    مستخدم : <fg=green>' . DemoUsersSeeder::USERS[0]['email'] .
+                '</> | كلمة المرور: <fg=yellow>' . DemoUsersSeeder::PASSWORDS['user'] . '</>'
+        );
+
         $this->command->newLine();
     }
 }
