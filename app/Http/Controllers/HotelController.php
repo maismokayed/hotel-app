@@ -23,10 +23,7 @@ class HotelController extends Controller
             'city_id'     => 'nullable|integer|exists:cities,id',
             'star_rating' => 'nullable|integer|min:1|max:5',
             'sort'        => 'nullable|string|in:popular,latest',
-            'per_page'    => 'nullable|integer|min:1|max:50',
         ]);
-
-        $perPage = $validated['per_page'] ?? 10;
 
         $hotels = Hotel::query()
             ->when($request->filled('name'), function ($q) use ($request) {
@@ -53,11 +50,11 @@ class HotelController extends Controller
             }, function ($q) {
                 $q->latest();
             })
-            ->paginate($perPage);
+            ->get();
 
         // Eager-load media collections too, to avoid N+1 queries when
         // HotelResource calls getFirstMediaUrl()/getMedia() per hotel.
-        $hotels->getCollection()->load(
+        $hotels->load(
             'user.roles',
             'city.media',
             'services',
