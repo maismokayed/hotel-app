@@ -13,6 +13,7 @@ use App\Http\Controllers\CityController;
 use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Manager\DashboardController as ManagerDashboardController;
 
 //Auth routes
 //Auth routes
@@ -104,6 +105,12 @@ Route::prefix('wallet')->middleware('auth:sanctum')->group(function () {
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
 });
+//
+//Manager dashboard
+Route::middleware(['auth:sanctum', 'role:manager'])->group(function () {
+    Route::get('/manager/dashboard', [ManagerDashboardController::class, 'index']);
+});
+//
 //cities
 Route::get('/cities', [CityController::class, 'index']);
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
