@@ -89,6 +89,9 @@ Route::prefix('rooms')->group(function () {
     });
 });
 // review routes
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::get('/reviews', [ReviewController::class, 'all']);
+});
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']);
 });

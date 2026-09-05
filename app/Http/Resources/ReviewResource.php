@@ -14,13 +14,18 @@ class ReviewResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-      return [
+        return [
             'id'          => $this->id,
             'user'        => [
                 'id'        => $this->user->id,
                 'full_name' => $this->user->full_name,
             ],
             'hotel_id'    => $this->hotel_id,
+            'hotel'       => $this->whenLoaded('hotel', fn() => [
+                'id'      => $this->hotel->id,
+                'name_ar' => $this->hotel->name_ar,
+                'name_en' => $this->hotel->name_en,
+            ]),
             'booking_id'  => $this->booking_id,
             'comment'     => $this->comment,
             'rating'      => $this->rating,

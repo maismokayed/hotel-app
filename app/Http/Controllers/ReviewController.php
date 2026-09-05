@@ -19,6 +19,14 @@ class ReviewController extends Controller
 
         return ReviewResource::collection($reviews);
     }
+    public function all()
+    {
+        $reviews = Review::with(['user', 'hotel'])
+            ->latest()
+            ->paginate(15);
+
+        return ReviewResource::collection($reviews);
+    }
 
     public function store(StoreReviewRequest $request)
     {
