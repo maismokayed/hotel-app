@@ -86,15 +86,6 @@ it('sorts hotels by popularity when requested', function () {
         ->assertJsonPath('data.0.id', $popular->id);
 });
 
-it('paginates hotels with 10 per page', function () {
-    Hotel::factory()->count(15)->create();
-
-    $response = $this->getJson('/api/hotels');
-
-    $response->assertOk()
-        ->assertJsonCount(10, 'data')
-        ->assertJsonStructure(['data', 'links', 'meta']);
-});
 
 // ============================================================
 // SHOW

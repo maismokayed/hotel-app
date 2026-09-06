@@ -53,8 +53,10 @@ class DemoBookingsSeeder extends Seeder
 
         // ── حجوزات مستقبلية ─────────────────────────────────────────────
         ['kind' => 'confirmed', 'offset' => 7,    'nights' => 3, 'rooms' => ['suite'  => 1],               'coupon' => 'SUMMER25'],
-        ['kind' => 'pending',   'offset' => 16,   'nights' => 2, 'rooms' => ['double' => 1],               'coupon' => null],
-        ['kind' => 'pending',   'offset' => 30,   'nights' => 4, 'rooms' => ['double' => 2, 'suite' => 1],  'coupon' => 'WELCOME10'],
+
+        ['kind' => 'confirmed',   'offset' => 16,   'nights' => 2, 'rooms' => ['double' => 1],               'coupon' => null],
+        ['kind' => 'confirmed',   'offset' => 30,   'nights' => 4, 'rooms' => ['double' => 2, 'suite' => 1],  'coupon' => 'WELCOME10'],
+
         ['kind' => 'confirmed', 'offset' => 45,   'nights' => 2, 'rooms' => ['single' => 1],               'coupon' => null],
     ];
 
@@ -68,7 +70,8 @@ class DemoBookingsSeeder extends Seeder
         ['kind' => 'completed', 'offset' => -90,  'nights' => 3, 'rooms' => ['deluxe' => 1],               'coupon' => null],
         ['kind' => 'completed', 'offset' => -35,  'nights' => 2, 'rooms' => ['double' => 2],               'coupon' => null],
         ['kind' => 'confirmed', 'offset' => 12,   'nights' => 2, 'rooms' => ['deluxe' => 1],               'coupon' => null],
-        ['kind' => 'pending',   'offset' => 22,   'nights' => 3, 'rooms' => ['double' => 1, 'deluxe' => 1], 'coupon' => null],
+        ['kind' => 'confirmed',   'offset' => 22,   'nights' => 3, 'rooms' => ['double' => 1, 'deluxe' => 1], 'coupon' => null],
+
     ];
 
     /** أسماء ضيوف (عندما يحجز المستخدم لشخص آخر). */
@@ -90,7 +93,6 @@ class DemoBookingsSeeder extends Seeder
     private array $stats = [
         'completed' => 0,
         'confirmed' => 0,
-        'pending'   => 0,
         'cancelled' => 0,
         'multiRoom' => 0,
         'withCoupon' => 0,
@@ -178,10 +180,9 @@ class DemoBookingsSeeder extends Seeder
         $this->markRoomsInStay();
 
         $this->command?->info(sprintf(
-            '  ✔ حجوزات: %d مكتمل، %d مؤكد، %d معلّق، %d ملغى | %d متعدد الغرف، %d بكوبون، %d دفع بالمحفظة%s',
+            '  ✔ حجوزات: %d مكتمل، %d مؤكد، %d ملغى | %d متعدد الغرف، %d بكوبون، %d دفع بالمحفظة%s',
             $this->stats['completed'],
             $this->stats['confirmed'],
-            $this->stats['pending'],
             $this->stats['cancelled'],
             $this->stats['multiRoom'],
             $this->stats['withCoupon'],
@@ -227,7 +228,7 @@ class DemoBookingsSeeder extends Seeder
             'cancelled' => 'cancelled',
             'in_stay'   => 'confirmed',
             'confirmed' => 'confirmed',
-            default     => 'pending',
+            default     => 'confirmed',
         };
 
         $capacity = (int) $selected->sum('capacity');
