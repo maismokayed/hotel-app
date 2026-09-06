@@ -39,7 +39,6 @@ class CouponController extends Controller
     public function update(UpdateCouponRequest $request, Coupon $coupon)
     {
         $coupon->update($request->validated());
-        $coupon->update($request->validated());
         return $this->success(
             new CouponResource($coupon),
             ['ar' => 'تم تحديث الكوبون بنجاح.', 'en' => 'Coupon updated successfully.']
