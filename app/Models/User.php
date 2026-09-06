@@ -11,6 +11,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
+    protected $guard_name = 'api';
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens, HasRoles;
 
@@ -19,7 +20,7 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $guard_name = 'api';
+
     protected $fillable = [
         'full_name',
         'email',

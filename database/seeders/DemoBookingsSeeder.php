@@ -38,24 +38,24 @@ class DemoBookingsSeeder extends Seeder
      */
     private const SCENARIOS = [
         // ── حجوزات ماضية مكتملة ──────────────────────────────────────────
-        ['kind' => 'completed', 'offset' => -300, 'nights' => 3, 'rooms' => ['double' => 1],               'payment' => 'wallet', 'coupon' => null],
-        ['kind' => 'completed', 'offset' => -240, 'nights' => 2, 'rooms' => ['single' => 1],               'payment' => 'cash',   'coupon' => null],
-        ['kind' => 'completed', 'offset' => -180, 'nights' => 5, 'rooms' => ['double' => 2],               'payment' => 'wallet', 'coupon' => 'WELCOME10'],
-        ['kind' => 'completed', 'offset' => -120, 'nights' => 4, 'rooms' => ['suite'  => 1],               'payment' => 'cash',   'coupon' => 'FLAT50'],
-        ['kind' => 'completed', 'offset' => -60,  'nights' => 2, 'rooms' => ['double' => 1, 'single' => 1], 'payment' => 'wallet', 'coupon' => null],
-        ['kind' => 'completed', 'offset' => -25,  'nights' => 3, 'rooms' => ['deluxe' => 1],               'payment' => 'wallet', 'coupon' => 'LOYAL5'],
+        ['kind' => 'completed', 'offset' => -300, 'nights' => 3, 'rooms' => ['double' => 1],               'coupon' => null],
+        ['kind' => 'completed', 'offset' => -240, 'nights' => 2, 'rooms' => ['single' => 1],               'coupon' => null],
+        ['kind' => 'completed', 'offset' => -180, 'nights' => 5, 'rooms' => ['double' => 2],               'coupon' => 'WELCOME10'],
+        ['kind' => 'completed', 'offset' => -120, 'nights' => 4, 'rooms' => ['suite'  => 1],               'coupon' => 'FLAT50'],
+        ['kind' => 'completed', 'offset' => -60,  'nights' => 2, 'rooms' => ['double' => 1, 'single' => 1], 'coupon' => null],
+        ['kind' => 'completed', 'offset' => -25,  'nights' => 3, 'rooms' => ['deluxe' => 1],               'coupon' => 'LOYAL5'],
 
         // ── حجز ملغى (إلغاء مبكر، بدون غرامة) ────────────────────────────
-        ['kind' => 'cancelled', 'offset' => -45,  'nights' => 2, 'rooms' => ['double' => 1],               'payment' => 'wallet', 'coupon' => null],
+        ['kind' => 'cancelled', 'offset' => -45,  'nights' => 2, 'rooms' => ['double' => 1],               'coupon' => null],
 
         // ── إقامة جارية حالياً ───────────────────────────────────────────
-        ['kind' => 'in_stay',   'offset' => -2,   'nights' => 5, 'rooms' => ['double' => 1],               'payment' => 'wallet', 'coupon' => null],
+        ['kind' => 'in_stay',   'offset' => -2,   'nights' => 5, 'rooms' => ['double' => 1],               'coupon' => null],
 
         // ── حجوزات مستقبلية ─────────────────────────────────────────────
-        ['kind' => 'confirmed', 'offset' => 7,    'nights' => 3, 'rooms' => ['suite'  => 1],               'payment' => 'wallet', 'coupon' => 'SUMMER25'],
-        ['kind' => 'pending',   'offset' => 16,   'nights' => 2, 'rooms' => ['double' => 1],               'payment' => 'cash',   'coupon' => null],
-        ['kind' => 'pending',   'offset' => 30,   'nights' => 4, 'rooms' => ['double' => 2, 'suite' => 1],  'payment' => 'cash',   'coupon' => 'WELCOME10'],
-        ['kind' => 'confirmed', 'offset' => 45,   'nights' => 2, 'rooms' => ['single' => 1],               'payment' => 'wallet', 'coupon' => null],
+        ['kind' => 'confirmed', 'offset' => 7,    'nights' => 3, 'rooms' => ['suite'  => 1],               'coupon' => 'SUMMER25'],
+        ['kind' => 'pending',   'offset' => 16,   'nights' => 2, 'rooms' => ['double' => 1],               'coupon' => null],
+        ['kind' => 'pending',   'offset' => 30,   'nights' => 4, 'rooms' => ['double' => 2, 'suite' => 1],  'coupon' => 'WELCOME10'],
+        ['kind' => 'confirmed', 'offset' => 45,   'nights' => 2, 'rooms' => ['single' => 1],               'coupon' => null],
     ];
 
     /**
@@ -64,11 +64,11 @@ class DemoBookingsSeeder extends Seeder
      * "أكتر الفنادق حجزاً" بالداشبورد.
      */
     private const EXTRA_SCENARIOS_FOR_FOCUS = [
-        ['kind' => 'completed', 'offset' => -200, 'nights' => 2, 'rooms' => ['double' => 1],               'payment' => 'cash',   'coupon' => null],
-        ['kind' => 'completed', 'offset' => -90,  'nights' => 3, 'rooms' => ['deluxe' => 1],               'payment' => 'wallet', 'coupon' => null],
-        ['kind' => 'completed', 'offset' => -35,  'nights' => 2, 'rooms' => ['double' => 2],               'payment' => 'cash',   'coupon' => null],
-        ['kind' => 'confirmed', 'offset' => 12,   'nights' => 2, 'rooms' => ['deluxe' => 1],               'payment' => 'wallet', 'coupon' => null],
-        ['kind' => 'pending',   'offset' => 22,   'nights' => 3, 'rooms' => ['double' => 1, 'deluxe' => 1], 'payment' => 'cash',   'coupon' => null],
+        ['kind' => 'completed', 'offset' => -200, 'nights' => 2, 'rooms' => ['double' => 1],               'coupon' => null],
+        ['kind' => 'completed', 'offset' => -90,  'nights' => 3, 'rooms' => ['deluxe' => 1],               'coupon' => null],
+        ['kind' => 'completed', 'offset' => -35,  'nights' => 2, 'rooms' => ['double' => 2],               'coupon' => null],
+        ['kind' => 'confirmed', 'offset' => 12,   'nights' => 2, 'rooms' => ['deluxe' => 1],               'coupon' => null],
+        ['kind' => 'pending',   'offset' => 22,   'nights' => 3, 'rooms' => ['double' => 1, 'deluxe' => 1], 'coupon' => null],
     ];
 
     /** أسماء ضيوف (عندما يحجز المستخدم لشخص آخر). */
@@ -220,12 +220,7 @@ class DemoBookingsSeeder extends Seeder
         $discount = $coupon ? $this->discount($coupon, $totalPrice) : 0.0;
         $final    = round(max(0, $totalPrice - $discount), 2);
 
-        // الدفع من المحفظة يحتاج رصيداً كافياً، وإلا يتحول الحجز إلى دفع نقدي.
-        $payment = $scenario['payment'];
-
-        if ($payment === 'wallet' && (! $wallet || (float) $wallet->balance < $final)) {
-            $payment = 'cash';
-        }
+        $payment = 'wallet';
 
         $status = match ($scenario['kind']) {
             'completed' => 'completed',
@@ -373,6 +368,12 @@ class DemoBookingsSeeder extends Seeder
     ): void {
         if ($payment !== 'wallet' || ! $wallet) {
             return;
+        }
+
+        if ((float) $wallet->balance < $final) {
+            $shortfall = $final - (float) $wallet->balance;
+            $wallet->increment('balance', $shortfall);
+            $this->transaction($wallet, $shortfall, 'credit', 'deposit', $createdAt);
         }
 
         $wallet->decrement('balance', $final);
