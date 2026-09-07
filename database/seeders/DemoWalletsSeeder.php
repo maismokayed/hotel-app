@@ -34,11 +34,11 @@ class DemoWalletsSeeder extends Seeder
             // إيداعات أولية قبل أقدم حجز، حتى يبقى الرصيد منطقياً زمنياً
             // (لا يوجد دفع من رصيد لم يُودَع بعد).
             $plan = [
-                ['amount' => 4000 + ($index % 6) * 600, 'at' => now()->subMonths(13)->setTime(11, 15)],
+                ['amount' => 300 + ($index % 6) * 60, 'at' => now()->subMonths(13)->setTime(11, 15)],
             ];
 
             if ($index % 2 === 0) {
-                $plan[] = ['amount' => 1500 + ($index % 4) * 500, 'at' => now()->subMonths(12)->setTime(9, 40)];
+                $plan[] = ['amount' => 120 + ($index % 4) * 40, 'at' => now()->subMonths(12)->setTime(9, 40)];
             }
 
             foreach ($plan as $deposit) {

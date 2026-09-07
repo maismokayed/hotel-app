@@ -29,7 +29,7 @@ class DemoUsersSeeder extends Seeder
 
     /** المدير العام للنظام. */
     public const ADMIN = [
-        'full_name' => 'رنا الحلبي',
+        'full_name' => 'لين قاسم',
         'email'     => 'admin@demo.test',
         'phone'     => '0930000001',
     ];
