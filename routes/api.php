@@ -24,7 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::delete('/profile', [AuthController::class, 'deleteAccount']);
 });
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,api'])->group(function () {
     Route::get('/users', [AuthController::class, 'index']);
     Route::patch('/users/{user}/role', [UserController::class, 'updateRole']);
 });
@@ -37,7 +37,7 @@ Route::prefix('hotels')->group(function () {
     Route::get('/{hotel}/rooms', [RoomController::class, 'indexByHotel']);
     Route::get('/{hotel}/room-types', [RoomController::class, 'roomTypes']);
 
-    Route::middleware(['auth:sanctum', 'role:admin|manager'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:admin|manager,api'])->group(function () {
         Route::post('/', [HotelController::class, 'store']);
         Route::put('/{hotel}', [HotelController::class, 'update']);
         Route::patch('/{hotel}/status', [HotelController::class, 'updateStatus']);
@@ -48,7 +48,7 @@ Route::prefix('hotels')->group(function () {
         Route::post('/{hotel}/services', [HotelController::class, 'syncServices']);
     });
 
-    Route::middleware(['auth:sanctum', 'role:admin'])
+    Route::middleware(['auth:sanctum', 'role:admin,api'])
         ->patch('/{hotel}/transfer', [HotelController::class, 'transfer']);
 });
 
@@ -59,7 +59,7 @@ Route::prefix('bookings')->middleware('auth:sanctum')->group(function () {
     Route::get('/{booking}', [BookingController::class, 'show']);
     Route::patch('/{booking}/cancel', [BookingController::class, 'cancel']);
 
-    Route::middleware('role:admin|manager')->group(function () {
+    Route::middleware('role:admin|manager,api')->group(function () {
         Route::patch('/{booking}', [BookingController::class, 'update']);
     });
 });
@@ -69,7 +69,7 @@ Route::prefix('bookings')->middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->get('/coupons/check', [CouponController::class, 'check']);
 
 // coupon routes (admin only)
-Route::prefix('coupons')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
+Route::prefix('coupons')->middleware(['auth:sanctum', 'role:admin,api'])->group(function () {
     Route::get('/', [CouponController::class, 'index']);
     Route::post('/', [CouponController::class, 'store']);
     Route::get('/{coupon}', [CouponController::class, 'show']);
@@ -82,14 +82,14 @@ Route::prefix('rooms')->group(function () {
     Route::get('/', [RoomController::class, 'index']);
     Route::get('/{room}', [RoomController::class, 'show']);
 
-    Route::middleware(['auth:sanctum', 'role:admin|manager'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:admin|manager,api'])->group(function () {
         Route::post('/', [RoomController::class, 'store']);
         Route::put('/{room}', [RoomController::class, 'update']);
         Route::delete('/{room}', [RoomController::class, 'destroy']);
     });
 });
 // review routes
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,api'])->group(function () {
     Route::get('/reviews', [ReviewController::class, 'all']);
 });
 Route::middleware('auth:sanctum')->group(function () {
@@ -105,31 +105,31 @@ Route::prefix('wallet')->middleware('auth:sanctum')->group(function () {
     Route::get('/transactions', [WalletController::class, 'transactions']);
 });
 // admin Dashboard 
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,api'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
 });
 //
 //Manager dashboard
-Route::middleware(['auth:sanctum', 'role:manager'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:manager,api'])->group(function () {
     Route::get('/manager/dashboard', [ManagerDashboardController::class, 'index']);
 });
 //
 //cities
 Route::get('/cities', [CityController::class, 'index']);
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,api'])->group(function () {
     Route::post('/cities/{city}/image', [CityController::class, 'uploadImage']);
     Route::delete('/cities/{city}/image', [CityController::class, 'deleteImage']);
 });
 //Contact messages routes
 Route::post('/contact-us', [ContactMessageController::class, 'store']);
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,api'])->group(function () {
     Route::get('/contact-us', [ContactMessageController::class, 'index']);
     Route::patch('/contact-us/{contactMessage}', [ContactMessageController::class, 'update']);
 });
 //services routes
 Route::get('services', [ServiceController::class, 'index']);
 
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,api'])->group(function () {
     Route::post('services', [ServiceController::class, 'store']);
     Route::put('services/{service}', [ServiceController::class, 'update']);
     Route::delete('services/{service}', [ServiceController::class, 'destroy']);
