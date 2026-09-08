@@ -149,11 +149,11 @@ class AuthController extends Controller
             ], 422);
         }
 
-        if ($user->bookings()->exists()) {
+        if ($user->bookings()->whereIn('status', ['pending', 'confirmed'])->exists()) {
             return response()->json([
                 'success' => false,
                 'message' => [
-                    'ar' => 'لا يمكن حذف الحساب لوجود حجوزات مرتبطة به.',
+                    'ar' => 'لا يمكن حذف الحساب لوجود حجوزات فعّالة مرتبطة به.',
                     'en' => 'Cannot delete account because there are active bookings associated with it.',
                 ],
             ], 422);
